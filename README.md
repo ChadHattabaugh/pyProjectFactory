@@ -14,35 +14,44 @@ A comprehensive, modern Python project template with best practices, automation,
 
 ## Quick Start
 
-### Option 1: Interactive Setup (Recommended)
+### 🚀 Using GitHub Template (Recommended)
+
+1. **Click "Use this template"** on the [GitHub repository page](https://github.com/ChadHattabaugh/new-project-template)
+2. **Create your new repository** with your desired name
+3. **Clone your new repository**:
+   ```bash
+   git clone https://github.com/yourusername/your-new-project.git
+   cd your-new-project
+   ```
+4. **Run the interactive setup**:
+   ```bash
+   python setup_project.py
+   ```
+5. **Start developing**:
+   ```bash
+   just setup    # Setup development environment
+   just test     # Run tests
+   ```
+
+### Alternative Methods
+
+#### Option 1: Direct Clone + Setup
 ```bash
-# Clone template
-git clone https://github.com/yourusername/python-project-template.git
-cd python-project-template
+# Clone template directly
+git clone https://github.com/ChadHattabaugh/new-project-template.git my-project
+cd my-project
 
 # Run interactive setup
 python setup_project.py
 ```
 
-### Option 2: Using Copier
+#### Option 2: Using Copier
 ```bash
 # Install copier
 pip install copier
 
 # Generate project
-copier copy https://github.com/yourusername/python-project-template.git my-new-project
-```
-
-### Option 3: Manual Setup
-```bash
-# Clone and customize manually
-git clone https://github.com/yourusername/python-project-template.git my-project
-cd my-project
-
-# Replace template variables
-# {{PROJECT_NAME}} → your-project-name
-# {{AUTHOR_NAME}} → Your Name
-# etc.
+copier copy https://github.com/ChadHattabaugh/new-project-template.git my-new-project
 ```
 
 ## What You Get
