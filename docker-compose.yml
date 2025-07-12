@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # Development environment with full toolchain
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8888:8888"    # Jupyter Lab
+      - "4040:4040"    # Spark UI
+    volumes:
+      - .:/workspace
+      - dev-venv:/workspace/.venv
+      - dev-cache:/root/.cache
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-}
+      - SPARK_LOCAL_IP=0.0.0.0
+      - PYTHONPATH=/workspace/src
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    networks:
+      - dev-network
+
+  # Data-focused environment (existing)
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile.data
+    ports:
+      - "8889:8888"    # Jupyter Lab (different port to avoid conflict)
+      - "4041:4040"    # Spark UI (different port to avoid conflict)
+    volumes:
+      - ./notebooks:/workspace/notebooks
+      - ./data:/workspace/data
+      - ./src:/workspace/src
+      - ./scripts:/workspace/scripts
+      - jupyter-home:/root/.jupyter
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-}
+      - SPARK_LOCAL_IP=0.0.0.0
+      - PYTHONPATH=/workspace/src
+    working_dir: /workspace
+    command: uv run jupyter lab --config=/workspace/.jupyter/jupyter_lab_config.py
+    networks:
+      - dev-network
+
+  # Optional: Spark master for cluster mode
+  spark-master:
+    image: bitnami/spark:3.5
+    ports:
+      - "8080:8080"    # Spark Master UI
+      - "7077:7077"    # Spark Master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    networks:
+      - dev-network
+    profiles:
+      - cluster
+
+  # Optional: Spark worker for cluster mode  
+  spark-worker:
+    image: bitnami/spark:3.5
+    ports:
+      - "8081:8081"    # Spark Worker UI
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2g
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    depends_on:
+      - spark-master
+    networks:
+      - dev-network
+    profiles:
+      - cluster
+
+volumes:
+  jupyter-home:
+  dev-venv:
+  dev-cache:
+
+networks:
+  dev-network:
+    driver: bridge

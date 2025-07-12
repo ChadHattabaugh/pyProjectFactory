@@ -1,0 +1,57 @@
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/workspace/src
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    build-essential \
+    openjdk-17-jdk \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set JAVA_HOME for Spark
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy project files
+COPY pyproject.toml uv.lock* ./
+COPY src/ src/
+COPY tests/ tests/
+COPY noxfile.py ./
+COPY .pre-commit-config.yaml ./
+
+# Install dependencies
+RUN uv sync --extra dev --extra data
+
+# Install pre-commit hooks
+RUN uv run pre-commit install
+
+# Expose ports for Jupyter and Spark UI
+EXPOSE 8888 4040
+
+# Create entrypoint script
+RUN echo '#!/bin/bash\n\
+echo "🐍 Python Development Environment Ready!"\n\
+echo "📂 Working directory: /workspace"\n\
+echo "🔧 Available commands:"\n\
+echo "  - nox -s tests          # Run tests"\n\
+echo "  - nox -s lint           # Lint code"\n\
+echo "  - nox -s type_check     # Type checking"\n\
+echo "  - nox -s jupyter        # Start Jupyter Lab"\n\
+echo "  - nox -s ci             # Full CI pipeline"\n\
+echo "💡 Jupyter Lab: http://localhost:8888"\n\
+echo "⚡ Spark UI: http://localhost:4040"\n\
+echo ""\n\
+exec "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]

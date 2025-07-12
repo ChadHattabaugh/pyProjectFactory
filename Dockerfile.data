@@ -1,0 +1,54 @@
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    JUPYTER_ENABLE_LAB=yes \
+    JUPYTER_TOKEN="" \
+    JUPYTER_ALLOW_ROOT=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    openjdk-17-jdk \
+    curl \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set JAVA_HOME
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH=$PATH:$JAVA_HOME/bin
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy project files
+COPY pyproject.toml uv.lock* ./
+COPY src/ src/
+COPY notebooks/ notebooks/
+COPY data/ data/
+
+# Install dependencies
+RUN uv sync --extra data --extra dev
+
+# Create directories for Jupyter
+RUN mkdir -p /workspace/.jupyter
+
+# Configure Jupyter
+RUN echo "c.ServerApp.ip = '0.0.0.0'" > /workspace/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.port = 8888" >> /workspace/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.open_browser = False" >> /workspace/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.allow_root = True" >> /workspace/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.token = ''" >> /workspace/.jupyter/jupyter_lab_config.py
+
+# Expose Jupyter port
+EXPOSE 8888
+
+# Expose Spark UI port
+EXPOSE 4040
+
+# Default command
+CMD ["uv", "run", "jupyter", "lab", "--config=/workspace/.jupyter/jupyter_lab_config.py"]

@@ -1,0 +1,128 @@
+_templates_suffix: .jinja
+_envops:
+  block_start_string: "{%"
+  block_end_string: "%}"
+  variable_start_string: "{{"
+  variable_end_string: "}}"
+
+# Project Information
+project_name:
+  type: str
+  help: "Project name (lowercase, no spaces)"
+  placeholder: "my-awesome-project"
+  validator: "{% if not (project_name | regex_search('^[a-z][a-z0-9-]*$')) %}Project name must be lowercase, start with a letter, and contain only letters, numbers, and hyphens{% endif %}"
+
+project_description:
+  type: str
+  help: "Brief description of the project"
+  placeholder: "An awesome Python project"
+
+author_name:
+  type: str
+  help: "Author's full name"
+  placeholder: "Your Name"
+
+author_email:
+  type: str
+  help: "Author's email address"
+  placeholder: "your.email@example.com"
+  validator: "{% if not (author_email | regex_search('^[^@]+@[^@]+\\.[^@]+$')) %}Please enter a valid email address{% endif %}"
+
+github_username:
+  type: str
+  help: "GitHub username or organization"
+  placeholder: "yourusername"
+
+# Project Type
+project_type:
+  type: str
+  help: "Type of project"
+  choices:
+    - "app"
+    - "library" 
+    - "package"
+    - "data"
+  default: "library"
+
+# Python Configuration
+min_python_version:
+  type: str
+  help: "Minimum Python version"
+  choices:
+    - "3.9"
+    - "3.10"
+    - "3.11"
+    - "3.12"
+  default: "3.9"
+
+# License
+license:
+  type: str
+  help: "Project license"
+  choices:
+    - "MIT"
+    - "Apache-2.0"
+    - "GPL-3.0"
+    - "BSD-3-Clause"
+    - "Proprietary"
+  default: "MIT"
+
+# Optional Features
+use_docker:
+  type: bool
+  help: "Include Docker configuration?"
+  default: true
+
+use_pre_commit:
+  type: bool
+  help: "Include pre-commit hooks?"
+  default: true
+
+use_github_actions:
+  type: bool
+  help: "Include GitHub Actions CI/CD?"
+  default: true
+
+use_jupyter:
+  type: bool
+  help: "Include Jupyter notebook support?"
+  default: "{{ project_type == 'data' }}"
+
+use_spark:
+  type: bool
+  help: "Include PySpark configuration?"
+  default: "{{ project_type == 'data' }}"
+
+use_cli:
+  type: bool
+  help: "Include CLI interface?"
+  default: "{{ project_type == 'app' }}"
+
+# Data Project Specific
+data_sources:
+  when: "{{ project_type == 'data' }}"
+  type: str
+  help: "Primary data sources (comma-separated)"
+  placeholder: "CSV files, APIs, databases"
+  default: ""
+
+# Development Options
+use_strict_typing:
+  type: bool
+  help: "Use strict type checking?"
+  default: true
+
+include_examples:
+  type: bool
+  help: "Include example code and tests?"
+  default: true
+
+# Claude Integration
+setup_claude_md:
+  type: bool
+  help: "Create CLAUDE.md with project context?"
+  default: true
+
+# Computed values
+python_package_name: "{{ project_name | replace('-', '_') }}"
+project_slug: "{{ project_name | lower | replace(' ', '-') | replace('_', '-') }}"
