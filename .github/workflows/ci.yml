@@ -119,7 +119,7 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v3
       with:
-        enable-cache: true
+        enable-cache: false
 
     - name: Install dependencies for linting
       run: |
@@ -198,7 +198,7 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v3
       with:
-        enable-cache: true
+        enable-cache: false
 
     - name: Install dependencies for security
       run: |
