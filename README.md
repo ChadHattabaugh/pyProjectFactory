@@ -1,6 +1,8 @@
-# Python Project Template
+# PyForge
 
-A comprehensive, modern Python project template with best practices, automation, and optional data science capabilities.
+**Forge new Python projects from the ground up**
+
+A comprehensive, modern Python project template with enterprise-grade automation, repository protection, and AI-assisted development.
 
 ## Features
 
@@ -17,7 +19,7 @@ A comprehensive, modern Python project template with best practices, automation,
 
 ### 🚀 Using GitHub Template (Recommended)
 
-1. **Click "Use this template"** on the [GitHub repository page](https://github.com/ChadHattabaugh/new-project-template)
+1. **Click "Use this template"** on the [GitHub repository page](https://github.com/ChadHattabaugh/PyForge)
 2. **Create your new repository** with your desired name
 3. **Clone your new repository**:
    ```bash
@@ -40,7 +42,7 @@ A comprehensive, modern Python project template with best practices, automation,
 #### Option 1: Direct Clone + Setup
 ```bash
 # Clone template directly
-git clone https://github.com/ChadHattabaugh/new-project-template.git my-project
+git clone https://github.com/ChadHattabaugh/PyForge.git my-project
 cd my-project
 
 # Run interactive setup
@@ -53,7 +55,7 @@ python setup_project.py
 pip install copier
 
 # Generate project
-copier copy https://github.com/ChadHattabaugh/new-project-template.git my-new-project
+copier copy https://github.com/ChadHattabaugh/PyForge.git my-new-project
 ```
 
 ## What You Get
@@ -126,7 +128,7 @@ just info           # Show project information
 ## Template Structure
 
 ```
-python-project-template/
+PyForge/
 ├── setup_project.py           # Interactive project setup
 ├── copier.yml                 # Copier template configuration
 ├── pyproject.toml            # Modern Python packaging
@@ -145,7 +147,7 @@ python-project-template/
 └── CLAUDE.md.template        # Claude AI context
 ```
 
-## Why This Template?
+## Why PyForge?
 
 ### Modern Python Ecosystem
 - **uv** is faster than pip/poetry for dependency management
@@ -186,11 +188,13 @@ The template supports extensive customization through:
 This template enforces GitFlow branching strategy:
 
 ### Branch Types
-- `master` - Production-ready code
-- `develop` - Integration branch (default)
+- `master` - Production-ready code (protected, no direct pushes)
+- `develop` - Integration branch (default, protected, no direct pushes)  
 - `feature/*` - New features (from develop)
 - `bugfix/*` - Bug fixes (from develop)
 - `patch/*` - Small patches/hotfixes (from develop)
+
+**Note**: Main branch is not used - master serves as the production branch.
 
 ### Development Process
 1. Create feature branch: `git checkout -b feature/my-feature develop`
