@@ -28,7 +28,7 @@ A comprehensive, modern Python project template with best practices, automation,
    ```bash
    python setup_project.py
    ```
-5. **Repository protection will be automatically configured** (see [Repository Setup](docs/REPOSITORY_SETUP.md))
+5. **Repository protection and full CI/CD will be automatically configured** (see [Repository Setup](docs/REPOSITORY_SETUP.md))
 6. **Start developing**:
    ```bash
    just setup    # Setup development environment

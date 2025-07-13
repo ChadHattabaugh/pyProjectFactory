@@ -249,6 +249,11 @@ def process_template_directory(src_dir: Path, dst_dir: Path, info: Dict[str, Any
             dst_path = dst_dir / dst_path_str
             dst_path.parent.mkdir(parents=True, exist_ok=True)
 
+            # Handle special template files
+            if item.name.endswith('.template'):
+                # Remove .template extension for final file
+                dst_path = dst_path.with_suffix('')
+            
             # Copy file
             shutil.copy2(item, dst_path)
 

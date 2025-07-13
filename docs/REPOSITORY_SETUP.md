@@ -4,7 +4,25 @@ This template includes automated repository protection setup to enforce GitFlow 
 
 ## Automatic Setup
 
-When you create a new repository from this template, the following protection rules will be automatically configured:
+When you create a new repository from this template, the following will be automatically configured:
+
+### Repository Protection Rules
+
+The automated setup will configure repository protection rules for your branches.
+
+### CI/CD Pipeline
+
+The template includes two CI configurations:
+- **Template CI** (current): Validates the template repository structure
+- **Project CI** (deployed): Full CI/CD pipeline for your actual project
+
+When you run `python setup_project.py`, the template CI is replaced with a full-featured CI pipeline that includes:
+- Multi-platform testing (Ubuntu, Windows, macOS)
+- Python version matrix testing (3.9-3.12)
+- Code quality checks (ruff, mypy)
+- Security scanning (safety, bandit)
+- Package building and testing
+- Optional notebook quality checks
 
 ### Branch Protection Rules
 
