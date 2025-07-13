@@ -1,9 +1,9 @@
 [project]
-name = "{{PROJECT_NAME}}"
+name = "new-project-template"
 version = "0.1.0"
-description = "{{PROJECT_DESCRIPTION}}"
+description = "Python project template with repository protection automation"
 authors = [
-    {name = "{{AUTHOR_NAME}}", email = "{{AUTHOR_EMAIL}}"}
+    {name = "Chad Hattabaugh", email = "chad@example.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.9"
@@ -36,19 +36,19 @@ data = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/{{GITHUB_USERNAME}}/{{PROJECT_NAME}}"
-"Bug Reports" = "https://github.com/{{GITHUB_USERNAME}}/{{PROJECT_NAME}}/issues"
-"Source" = "https://github.com/{{GITHUB_USERNAME}}/{{PROJECT_NAME}}"
+"Homepage" = "https://github.com/ChadHattabaugh/new-project-template"
+"Bug Reports" = "https://github.com/ChadHattabaugh/new-project-template/issues"
+"Source" = "https://github.com/ChadHattabaugh/new-project-template"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-path = "src/{{PROJECT_NAME}}/__init__.py"
+path = "src/new_project_template/__init__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/{{PROJECT_NAME}}"]
+packages = ["src/new_project_template"]
 
 [tool.ruff]
 target-version = "py39"
@@ -109,7 +109,7 @@ python_functions = ["test_*"]
 addopts = [
     "--strict-markers",
     "--strict-config",
-    "--cov=src/{{PROJECT_NAME}}",
+    "--cov=src/new_project_template",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-report=xml",
