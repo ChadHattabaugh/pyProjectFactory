@@ -1,8 +1,8 @@
-"""Basic tests for new_project_template."""
+"""Basic tests for {{PROJECT_NAME}}."""
 
 import pytest
 
-from new_project_template import __version__
+from {{PROJECT_NAME}} import __version__
 
 
 def test_version() -> None:

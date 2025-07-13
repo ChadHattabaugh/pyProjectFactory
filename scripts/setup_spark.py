@@ -4,7 +4,7 @@
 import sys
 from pathlib import Path
 
-from {{PROJECT_NAME}}.spark_utils import get_local_spark_session
+from new_project_template.spark_utils import get_local_spark_session
 
 
 def check_java_installation() -> bool:

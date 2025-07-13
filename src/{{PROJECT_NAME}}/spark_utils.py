@@ -22,7 +22,7 @@ def create_spark_session(
         Configured SparkSession
     """
     builder = SparkSession.builder.appName(app_name).master(master)
-
+    
     # Default configuration
     default_config = {
         "spark.sql.adaptive.enabled": "true",
@@ -38,24 +38,24 @@ def create_spark_session(
         "spark.executor.memory": "2g",
         "spark.executor.cores": "2",
     }
-
+    
     # Merge with user config
     if config:
         default_config.update(config)
-
+    
     # Apply configuration
     for key, value in default_config.items():
         builder = builder.config(key, value)
-
+    
     # Enable Hive support if available
     try:
         spark = builder.enableHiveSupport().getOrCreate()
     except Exception:
         spark = builder.getOrCreate()
-
+    
     # Set log level
     spark.sparkContext.setLogLevel("WARN")
-
+    
     return spark
 
 
@@ -77,7 +77,7 @@ def get_local_spark_session(
         "spark.driver.maxResultSize": "2g",
         "spark.sql.shuffle.partitions": str(os.cpu_count() or 4),
     }
-
+    
     return create_spark_session(
         app_name=app_name,
         master=f"local[{cores}]",
@@ -96,7 +96,7 @@ def stop_spark_session(spark: SparkSession) -> None:
 
 class SparkSessionManager:
     """Context manager for Spark sessions."""
-
+    
     def __init__(
         self,
         app_name: str = "{{PROJECT_NAME}}",
@@ -114,7 +114,7 @@ class SparkSessionManager:
         self.master = master
         self.config = config
         self.spark: Optional[SparkSession] = None
-
+    
     def __enter__(self) -> SparkSession:
         """Enter the context and create Spark session."""
         self.spark = create_spark_session(
@@ -123,7 +123,7 @@ class SparkSessionManager:
             config=self.config,
         )
         return self.spark
-
+    
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit the context and stop Spark session."""
         if self.spark:
