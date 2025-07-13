@@ -188,11 +188,13 @@ The template supports extensive customization through:
 This template enforces GitFlow branching strategy:
 
 ### Branch Types
-- `master` - Production-ready code
-- `develop` - Integration branch (default)
+- `master` - Production-ready code (protected, no direct pushes)
+- `develop` - Integration branch (default, protected, no direct pushes)  
 - `feature/*` - New features (from develop)
 - `bugfix/*` - Bug fixes (from develop)
 - `patch/*` - Small patches/hotfixes (from develop)
+
+**Note**: Main branch is not used - master serves as the production branch.
 
 ### Development Process
 1. Create feature branch: `git checkout -b feature/my-feature develop`

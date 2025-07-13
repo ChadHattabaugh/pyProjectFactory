@@ -10,7 +10,6 @@ on:
         type: boolean
   push:
     branches:
-      - main
       - master
     paths:
       - '.github/workflows/setup-repository-protection.yml'
@@ -105,7 +104,7 @@ jobs:
             "enforcement": "active",
             "conditions": {
               "ref_name": {
-                "include": ["master", "main", "develop"]
+                "include": ["master", "develop"]
               }
             },
             "rules": [
@@ -130,6 +129,9 @@ jobs:
               },
               {
                 "type": "deletion"
+              },
+              {
+                "type": "push"
               },
               {
                 "type": "commit_message_pattern",

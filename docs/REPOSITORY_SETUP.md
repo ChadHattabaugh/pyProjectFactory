@@ -27,12 +27,13 @@ When you run `python setup_project.py`, the template CI is replaced with a full-
 ### Branch Protection Rules
 
 #### Protected Branches
-- `master` (or `main`) - Production-ready code
-- `develop` - Integration branch for features
+- `master` - Production-ready code (protected from direct pushes)
+- `develop` - Integration branch for features (protected from direct pushes)
 
 #### Protection Requirements
 - **2 required reviewers**: Author approval + AI reviewer (Claude)
 - **Commit message pattern**: Must include issue number (e.g., `feat: add login (#123)`)
+- **No direct pushes**: All changes must come via pull requests
 - **No force pushes**: Prevents rewriting history
 - **No deletions**: Protects branches from accidental removal
 - **Status checks**: All CI/CD checks must pass
@@ -69,10 +70,11 @@ Go to your repository Settings → Rules → Rulesets and create:
 
 #### Protected Branch Ruleset
 - **Name**: Protected Branches
-- **Target**: `master`, `develop`
+- **Target**: `master`, `develop` (no main branch)
 - **Rules**:
   - Require pull request reviews (2 reviewers)
   - Require status checks
+  - Block direct pushes (PR only)
   - Block force pushes
   - Restrict deletions
   - Commit message pattern: `.*#\\d+.*`
