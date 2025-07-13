@@ -7,8 +7,9 @@ A comprehensive, modern Python project template with best practices, automation,
 - **Modern Tooling**: uv, ruff, mypy, pytest, nox
 - **Multi-Python Support**: Test against Python 3.9-3.12
 - **Quality Assurance**: Pre-commit hooks, security scanning, type checking
-- **Automation**: GitHub Actions CI/CD, automated dependency updates
+- **Automation**: GitHub Actions CI/CD, automated dependency updates, repository protection
 - **Development Experience**: VS Code configuration, Docker environments, justfile commands
+- **GitFlow Workflow**: Automated branch protection, naming conventions, AI-assisted reviews
 - **Data Science Ready**: Optional PySpark, Jupyter, Docker data environment
 - **Template System**: Interactive setup with project customization
 
@@ -27,7 +28,8 @@ A comprehensive, modern Python project template with best practices, automation,
    ```bash
    python setup_project.py
    ```
-5. **Start developing**:
+5. **Repository protection and full CI/CD will be automatically configured** (see [Repository Setup](docs/REPOSITORY_SETUP.md))
+6. **Start developing**:
    ```bash
    just setup    # Setup development environment
    just test     # Run tests
@@ -71,6 +73,7 @@ copier copy https://github.com/ChadHattabaugh/new-project-template.git my-new-pr
 - **justfile**: Convenient command runner
 - **GitHub Actions**: CI/CD with matrix testing
 - **Dependabot**: Automated dependency updates
+- **Repository Protection**: Automated GitFlow setup with branch protection and naming rules
 
 ### Project Types Supported
 
@@ -129,12 +132,13 @@ python-project-template/
 ├── pyproject.toml            # Modern Python packaging
 ├── noxfile.py                # Multi-environment automation
 ├── justfile                  # Development commands
-├── .github/workflows/        # CI/CD pipelines
+├── .github/workflows/        # CI/CD pipelines & repository setup
 ├── .vscode/                  # VS Code configuration
 ├── src/{{PROJECT_NAME}}/     # Source code template
 ├── tests/                    # Test templates
 ├── notebooks/                # Jupyter notebooks (data projects)
 ├── data/                     # Data directories (data projects)
+├── docs/                     # Documentation and setup guides
 ├── Dockerfile.dev            # Development environment
 ├── Dockerfile.data           # Data science environment
 ├── docker-compose.yml        # Multi-service setup
@@ -177,13 +181,33 @@ The template supports extensive customization through:
 3. **Feature Flags**: Enable/disable components based on project type
 4. **Template Variables**: Replace placeholders throughout files
 
+## Branch Workflow
+
+This template enforces GitFlow branching strategy:
+
+### Branch Types
+- `master` - Production-ready code
+- `develop` - Integration branch (default)
+- `feature/*` - New features (from develop)
+- `bugfix/*` - Bug fixes (from develop)
+- `patch/*` - Small patches/hotfixes (from develop)
+
+### Development Process
+1. Create feature branch: `git checkout -b feature/my-feature develop`
+2. Commit with issue numbers: `git commit -m "feat: add feature (#123)"`
+3. Push and create PR to `develop`
+4. Requires author + AI reviewer approval
+5. Merge to `develop`, deploy to `master` for releases
+
+See [Repository Setup Guide](docs/REPOSITORY_SETUP.md) for detailed workflow.
+
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
+2. Create a feature branch from `develop`
+3. Make your changes with proper commit messages
 4. Test with different project configurations
-5. Submit a pull request
+5. Submit a pull request to `develop`
 
 ## License
 

@@ -35,17 +35,17 @@ def get_user_input(
             full_prompt = f"{prompt}\n{choice_str}\nChoice"
         else:
             full_prompt = prompt
-        
+
         if default:
             full_prompt += f" [{default}]"
-        
+
         full_prompt += ": "
-        
+
         user_input = input(full_prompt).strip()
-        
+
         if not user_input and default:
             user_input = default
-        
+
         if is_bool:
             if user_input.lower() in ['y', 'yes', 'true', '1']:
                 return True
@@ -54,7 +54,7 @@ def get_user_input(
             else:
                 print("Please enter y/n, yes/no, true/false, or 1/0")
                 continue
-        
+
         if choices:
             try:
                 choice_index = int(user_input) - 1
@@ -68,11 +68,11 @@ def get_user_input(
                     return user_input
                 print(f"Please enter a valid choice: {', '.join(choices)}")
                 continue
-        
+
         if validator and not validator(user_input):
             print("Invalid input. Please try again.")
             continue
-        
+
         return user_input
 
 
@@ -80,35 +80,35 @@ def collect_project_info() -> Dict[str, Any]:
     """Collect project information from user."""
     print("🚀 Python Project Template Setup")
     print("=" * 40)
-    
+
     info = {}
-    
+
     # Basic project info
     info['project_name'] = get_user_input(
         "Project name (lowercase, hyphens allowed)",
         validator=validate_project_name
     )
-    
+
     info['project_description'] = get_user_input(
         "Project description",
         default="An awesome Python project"
     )
-    
+
     info['author_name'] = get_user_input(
         "Author name",
         default=os.environ.get('USER', 'Your Name')
     )
-    
+
     info['author_email'] = get_user_input(
         "Author email",
         validator=validate_email
     )
-    
+
     info['github_username'] = get_user_input(
         "GitHub username/organization",
         default=info['author_name'].lower().replace(' ', '')
     )
-    
+
     # Project type
     project_types = ["app", "library", "package", "data"]
     info['project_type'] = get_user_input(
@@ -116,7 +116,7 @@ def collect_project_info() -> Dict[str, Any]:
         choices=project_types,
         default="library"
     )
-    
+
     # Python version
     python_versions = ["3.9", "3.10", "3.11", "3.12"]
     info['min_python_version'] = get_user_input(
@@ -124,7 +124,7 @@ def collect_project_info() -> Dict[str, Any]:
         choices=python_versions,
         default="3.9"
     )
-    
+
     # License
     licenses = ["MIT", "Apache-2.0", "GPL-3.0", "BSD-3-Clause", "Proprietary"]
     info['license'] = get_user_input(
@@ -132,63 +132,63 @@ def collect_project_info() -> Dict[str, Any]:
         choices=licenses,
         default="MIT"
     )
-    
+
     # Optional features
     print("\n📦 Optional Features")
     print("-" * 20)
-    
+
     info['use_docker'] = get_user_input(
         "Include Docker configuration?",
         default="y",
         is_bool=True
     )
-    
+
     info['use_pre_commit'] = get_user_input(
         "Include pre-commit hooks?",
         default="y",
         is_bool=True
     )
-    
+
     info['use_github_actions'] = get_user_input(
         "Include GitHub Actions CI/CD?",
         default="y",
         is_bool=True
     )
-    
+
     info['use_jupyter'] = get_user_input(
         "Include Jupyter notebook support?",
         default="y" if info['project_type'] == 'data' else "n",
         is_bool=True
     )
-    
+
     info['use_spark'] = get_user_input(
         "Include PySpark configuration?",
         default="y" if info['project_type'] == 'data' else "n",
         is_bool=True
     )
-    
+
     info['use_cli'] = get_user_input(
         "Include CLI interface?",
         default="y" if info['project_type'] == 'app' else "n",
         is_bool=True
     )
-    
+
     if info['project_type'] == 'data':
         info['data_sources'] = get_user_input(
             "Primary data sources (comma-separated)",
             default="CSV files, APIs"
         )
-    
+
     info['setup_claude_md'] = get_user_input(
         "Create CLAUDE.md with project context?",
         default="y",
         is_bool=True
     )
-    
+
     # Computed values
     info['python_package_name'] = info['project_name'].replace('-', '_')
     info['project_slug'] = info['project_name'].lower().replace(' ', '-').replace('_', '-')
-    
+
     return info
 
 
@@ -196,14 +196,14 @@ def replace_template_vars(file_path: Path, replacements: Dict[str, Any]) -> None
     """Replace template variables in a file."""
     if file_path.suffix in ['.pyc', '.pyo', '.so', '.dylib', '.dll']:
         return
-    
+
     try:
         content = file_path.read_text(encoding='utf-8')
-        
+
         for key, value in replacements.items():
             placeholder = f"{{{{{key.upper()}}}}}"
             content = content.replace(placeholder, str(value))
-        
+
         file_path.write_text(content, encoding='utf-8')
     except UnicodeDecodeError:
         # Skip binary files
@@ -213,45 +213,50 @@ def replace_template_vars(file_path: Path, replacements: Dict[str, Any]) -> None
 def process_template_directory(src_dir: Path, dst_dir: Path, info: Dict[str, Any]) -> None:
     """Process template directory and copy to destination."""
     dst_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Files to skip based on configuration
     skip_files = set()
-    
+
     if not info.get('use_docker', True):
         skip_files.update(['Dockerfile.dev', 'Dockerfile.data', 'docker-compose.yml'])
-    
+
     if not info.get('use_pre_commit', True):
         skip_files.add('.pre-commit-config.yaml')
-    
+
     if not info.get('use_github_actions', True):
         skip_files.add('.github')
-    
+
     if not info.get('use_jupyter', False):
         skip_files.update(['notebooks', 'Dockerfile.data'])
-    
+
     if not info.get('use_spark', False):
         skip_files.update(['src/{{PROJECT_NAME}}/spark_utils.py', 'scripts/setup_spark.py'])
-    
+
     for item in src_dir.rglob('*'):
         if item.is_file():
             rel_path = item.relative_to(src_dir)
-            
+
             # Skip files based on configuration
             if any(skip in str(rel_path) for skip in skip_files):
                 continue
-            
+
             # Replace template variables in path
             dst_path_str = str(rel_path)
             for key, value in info.items():
                 placeholder = f"{{{{{key.upper()}}}}}"
                 dst_path_str = dst_path_str.replace(placeholder, str(value))
-            
+
             dst_path = dst_dir / dst_path_str
             dst_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Handle special template files
+            if item.name.endswith('.template'):
+                # Remove .template extension for final file
+                dst_path = dst_path.with_suffix('')
             
             # Copy file
             shutil.copy2(item, dst_path)
-            
+
             # Replace template variables in content
             replace_template_vars(dst_path, info)
 
@@ -260,7 +265,7 @@ def create_claude_md(project_dir: Path, info: Dict[str, Any]) -> None:
     """Create CLAUDE.md file with project context."""
     if not info.get('setup_claude_md', True):
         return
-    
+
     claude_content = f"""# {info['project_name']} - Claude Context
 
 ## Project Overview
@@ -452,9 +457,9 @@ def main() -> None:
     """Main setup function."""
     # Collect project information
     info = collect_project_info()
-    
+
     print(f"\n🔧 Setting up project '{info['project_name']}'...")
-    
+
     # Create project directory
     project_dir = Path.cwd() / info['project_name']
     if project_dir.exists():
@@ -468,17 +473,17 @@ def main() -> None:
         else:
             print("Setup cancelled.")
             return
-    
+
     # Process template
     template_dir = Path(__file__).parent
     process_template_directory(template_dir, project_dir, info)
-    
+
     # Create CLAUDE.md
     create_claude_md(project_dir, info)
-    
+
     # Initialize git
     initialize_git(project_dir)
-    
+
     print(f"\n🎉 Project '{info['project_name']}' created successfully!")
     print(f"📁 Location: {project_dir}")
     print("\n🚀 Next steps:")
@@ -486,7 +491,7 @@ def main() -> None:
     print("2. just setup")
     print("3. just test")
     print("4. Start coding!")
-    
+
     if info.get('use_jupyter', False):
         print("5. just jupyter  # Start Jupyter Lab")
 
