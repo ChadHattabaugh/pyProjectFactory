@@ -236,6 +236,15 @@ def process_template_directory(src_dir: Path, dst_dir: Path, info: Dict[str, Any
         if item.is_file():
             rel_path = item.relative_to(src_dir)
 
+            # Skip the destination directory to prevent infinite recursion
+            try:
+                # Check if this file is within the destination directory
+                item.relative_to(dst_dir)
+                continue  # Skip files that are in the destination directory
+            except ValueError:
+                # File is not in destination directory, proceed
+                pass
+
             # Skip files based on configuration
             if any(skip in str(rel_path) for skip in skip_files):
                 continue
