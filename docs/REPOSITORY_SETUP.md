@@ -1,6 +1,6 @@
-# PyProjectFactory Repository Protection Setup Guide
+# pyProjectTemplate Repository Protection Setup Guide
 
-PyProjectFactory includes automated repository protection setup to enforce GitFlow branching strategy and code quality standards.
+pyProjectTemplate includes automated repository protection setup to enforce GitFlow branching strategy and code quality standards.
 
 ## Automatic Setup
 
@@ -12,7 +12,7 @@ The automated setup will configure repository protection rules for your branches
 
 ### CI/CD Pipeline
 
-PyProjectFactory includes two CI configurations:
+pyProjectTemplate includes two CI configurations:
 - **Template CI** (current): Validates the template repository structure
 - **Project CI** (deployed): Full CI/CD pipeline for your actual project
 
