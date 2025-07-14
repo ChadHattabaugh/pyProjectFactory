@@ -1,6 +1,6 @@
-# PyForge
+# PyProjectFactory
 
-**Forge new Python projects from the ground up**
+**Manufacturing enterprise-ready Python projects**
 
 A comprehensive, modern Python project template with enterprise-grade automation, repository protection, and AI-assisted development.
 
@@ -19,7 +19,7 @@ A comprehensive, modern Python project template with enterprise-grade automation
 
 ### 🚀 Using GitHub Template (Recommended)
 
-1. **Click "Use this template"** on the [GitHub repository page](https://github.com/ChadHattabaugh/PyForge)
+1. **Click "Use this template"** on the [GitHub repository page](https://github.com/ChadHattabaugh/PyProjectFactory)
 2. **Create your new repository** with your desired name
 3. **Clone your new repository**:
    ```bash
@@ -42,7 +42,7 @@ A comprehensive, modern Python project template with enterprise-grade automation
 #### Option 1: Direct Clone + Setup
 ```bash
 # Clone template directly
-git clone https://github.com/ChadHattabaugh/PyForge.git my-project
+git clone https://github.com/ChadHattabaugh/PyProjectFactory.git my-project
 cd my-project
 
 # Run interactive setup
@@ -55,7 +55,7 @@ python setup_project.py
 pip install copier
 
 # Generate project
-copier copy https://github.com/ChadHattabaugh/PyForge.git my-new-project
+copier copy https://github.com/ChadHattabaugh/PyProjectFactory.git my-new-project
 ```
 
 ## What You Get
@@ -128,7 +128,7 @@ just info           # Show project information
 ## Template Structure
 
 ```
-PyForge/
+PyProjectFactory/
 ├── setup_project.py           # Interactive project setup
 ├── copier.yml                 # Copier template configuration
 ├── pyproject.toml            # Modern Python packaging
@@ -147,7 +147,7 @@ PyForge/
 └── CLAUDE.md.template        # Claude AI context
 ```
 
-## Why PyForge?
+## Why PyProjectFactory?
 
 ### Modern Python Ecosystem
 - **uv** is faster than pip/poetry for dependency management

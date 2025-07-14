@@ -1,6 +1,6 @@
-# PyForge GitHub Labeling System
+# PyProjectFactory GitHub Labeling System
 
-This document describes the comprehensive labeling system used in the PyForge repository to organize issues, facilitate automation, and enable efficient collaboration between maintainers and Claude AI.
+This document describes the comprehensive labeling system used in the PyProjectFactory repository to organize issues, facilitate automation, and enable efficient collaboration between maintainers and Claude AI.
 
 ## Label Categories
 
