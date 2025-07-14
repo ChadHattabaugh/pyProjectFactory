@@ -205,6 +205,16 @@ This template enforces GitFlow branching strategy:
 
 See [Repository Setup Guide](docs/REPOSITORY_SETUP.md) for detailed workflow.
 
+## Roadmap
+
+See our [Development Roadmap](ROADMAP.md) for planned features and timeline. Key upcoming features:
+
+- **Q4 2025**: YAML Configuration System for automated project setup
+- **Q1 2025**: FastAPI template support for web API development  
+- **Q2 2025**: Template ecosystem with framework-specific options
+
+Track progress and contribute to planning in our [GitHub Project](../../projects).
+
 ## Contributing
 
 1. Fork the repository
@@ -212,6 +222,8 @@ See [Repository Setup Guide](docs/REPOSITORY_SETUP.md) for detailed workflow.
 3. Make your changes with proper commit messages
 4. Test with different project configurations
 5. Submit a pull request to `develop`
+
+See our [GitHub Labels Guide](docs/GITHUB_LABELS.md) for issue categorization and our [Roadmap](ROADMAP.md) for strategic direction.
 
 ## License
 
