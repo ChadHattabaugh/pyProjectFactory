@@ -30,11 +30,18 @@ A comprehensive, modern Python project template with enterprise-grade automation
    ```bash
    python setup_project.py
    ```
+   The setup script will:
+   - Check for required tools (`uv`, `just`) and provide installation links if missing
+   - Create your project with all template files
+   - Initialize git repository with develop branch
+   - Automatically set up the development environment
+   - Install dependencies and pre-commit hooks
+
 5. **Repository protection and full CI/CD will be automatically configured** (see [Repository Setup](docs/REPOSITORY_SETUP.md))
-6. **Start developing**:
+6. **Start developing** (environment is already set up):
    ```bash
-   just setup    # Setup development environment
-   just test     # Run tests
+   cd your-project-name
+   just test     # Run tests to verify setup
    ```
 
 ### Alternative Methods
@@ -45,7 +52,7 @@ A comprehensive, modern Python project template with enterprise-grade automation
 git clone https://github.com/ChadHattabaugh/pyProjectFactory.git my-project
 cd my-project
 
-# Run interactive setup
+# Run interactive setup (includes dependency checking and environment setup)
 python setup_project.py
 ```
 
