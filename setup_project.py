@@ -21,6 +21,20 @@ def validate_project_name(name: str) -> bool:
     return bool(re.match(pattern, name))
 
 
+def get_git_config(key: str) -> Optional[str]:
+    """Get a value from git config."""
+    try:
+        result = subprocess.run(
+            ['git', 'config', '--get', key],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip() if result.stdout.strip() else None
+    except subprocess.CalledProcessError:
+        return None
+
+
 def get_user_input(
     prompt: str,
     default: Optional[str] = None,
@@ -94,13 +108,18 @@ def collect_project_info() -> Dict[str, Any]:
         default="An awesome Python project"
     )
 
+    # Get defaults from git config
+    git_name = get_git_config('user.name')
+    git_email = get_git_config('user.email')
+    
     info['author_name'] = get_user_input(
         "Author name",
-        default=os.environ.get('USER', 'Your Name')
+        default=git_name or os.environ.get('USER', 'Your Name')
     )
 
     info['author_email'] = get_user_input(
         "Author email",
+        default=git_email,
         validator=validate_email
     )
 
