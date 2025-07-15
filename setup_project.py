@@ -12,14 +12,42 @@ from typing import Any, Dict, List, Optional
 
 def validate_email(email: str) -> bool:
     """Validate email format."""
-    pattern = r'^[^@]+@[^@]+\.[^@]+$'
-    return bool(re.match(pattern, email))
+    if not email or len(email) < 5 or len(email) > 254:
+        return False
+    
+    # Basic email pattern with more robust validation
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not re.match(pattern, email):
+        return False
+    
+    # Check for valid domain part
+    local, domain = email.rsplit('@', 1)
+    if len(local) > 64 or len(domain) > 253:
+        return False
+        
+    return True
 
 
 def validate_project_name(name: str) -> bool:
     """Validate project name format."""
-    pattern = r'^[a-z][a-z0-9-]*$'
-    return bool(re.match(pattern, name))
+    if not name or len(name) < 2 or len(name) > 214:
+        return False
+    
+    # Must start with letter, can contain letters, numbers, hyphens
+    # but not end with hyphen
+    pattern = r'^[a-z][a-z0-9-]*[a-z0-9]$'
+    if len(name) == 1:
+        pattern = r'^[a-z]$'
+    
+    if not re.match(pattern, name):
+        return False
+    
+    # Check for reserved names
+    reserved_names = {'test', 'tests', 'src', 'lib', 'bin', 'tmp', 'temp', 'build', 'dist'}
+    if name in reserved_names:
+        return False
+        
+    return True
 
 
 def get_git_config(key: str) -> Optional[str]:
@@ -227,6 +255,9 @@ def replace_template_vars(file_path: Path, replacements: Dict[str, Any]) -> None
         file_path.write_text(content, encoding='utf-8')
     except UnicodeDecodeError:
         # Skip binary files
+        pass
+    except (PermissionError, OSError) as e:
+        print(f"⚠️  Could not process {file_path}: {e}")
         pass
 
 
@@ -474,6 +505,14 @@ When helping with this project:
 def install_just() -> bool:
     """Install just automatically using the official installation script."""
     try:
+        # First check if just is already installed
+        try:
+            subprocess.run(['just', '--version'], capture_output=True, check=True, timeout=10)
+            print("✅ just is already installed")
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass  # Not installed, continue with installation
+        
         print("Installing just...")
         
         if platform.system() == "Windows":
@@ -493,11 +532,11 @@ def install_just() -> bool:
                 f"curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to {install_dir}"
             ]
         
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=300)
         
         # Verify installation was successful
         try:
-            subprocess.run(['just', '--version'], capture_output=True, check=True)
+            subprocess.run(['just', '--version'], capture_output=True, check=True, timeout=10)
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             # If not found in PATH, try common locations
@@ -523,7 +562,7 @@ def check_dependencies() -> None:
     """Check if required tools are installed and offer to install them."""
     # Check uv first (required for project setup)
     try:
-        subprocess.run(['uv', '--version'], capture_output=True, check=True)
+        subprocess.run(['uv', '--version'], capture_output=True, check=True, timeout=10)
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("\n❌ Missing required tool: uv")
         print("Please install uv first: https://docs.astral.sh/uv/getting-started/installation/")
@@ -542,11 +581,10 @@ def check_dependencies() -> None:
         
         if response in ['y', 'yes']:
             if install_just():
-                print("✅ just installed successfully")
                 # Verify installation one more time
                 try:
-                    subprocess.run(['just', '--version'], capture_output=True, check=True)
-                except (subprocess.CalledProcessError, FileNotFoundError):
+                    subprocess.run(['just', '--version'], capture_output=True, check=True, timeout=10)
+                except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
                     print("⚠️  just was installed but may not be in your PATH.")
                     print("You may need to restart your terminal or add ~/.local/bin to your PATH.")
                     print("Manual installation guide: https://github.com/casey/just#installation")
@@ -564,12 +602,12 @@ def check_dependencies() -> None:
 def initialize_git(project_dir: Path, info: Dict[str, Any]) -> None:
     """Initialize git repository and create development branch."""
     try:
-        subprocess.run(['git', 'init'], cwd=project_dir, check=True, capture_output=True)
-        subprocess.run(['git', 'add', '.'], cwd=project_dir, check=True, capture_output=True)
-        subprocess.run(['git', 'commit', '-m', 'Initial project setup\n\n🤖 Generated with Claude Code'], cwd=project_dir, check=True, capture_output=True)
+        subprocess.run(['git', 'init'], cwd=project_dir, check=True, capture_output=True, timeout=30)
+        subprocess.run(['git', 'add', '.'], cwd=project_dir, check=True, capture_output=True, timeout=60)
+        subprocess.run(['git', 'commit', '-m', 'Initial project setup\n\n🤖 Generated with Claude Code'], cwd=project_dir, check=True, capture_output=True, timeout=30)
         
         # Create and switch to develop branch following GitFlow
-        subprocess.run(['git', 'checkout', '-b', 'develop'], cwd=project_dir, check=True, capture_output=True)
+        subprocess.run(['git', 'checkout', '-b', 'develop'], cwd=project_dir, check=True, capture_output=True, timeout=30)
         
         print("✅ Git repository initialized with develop branch")
     except subprocess.CalledProcessError as e:
@@ -582,11 +620,11 @@ def setup_development_environment(project_dir: Path) -> None:
         print("🔧 Setting up development environment...")
         
         # Run uv sync to install dependencies
-        subprocess.run(['uv', 'sync', '--extra', 'dev'], cwd=project_dir, check=True, capture_output=True)
+        subprocess.run(['uv', 'sync', '--extra', 'dev'], cwd=project_dir, check=True, capture_output=True, timeout=300)
         
         # Install pre-commit hooks if available
         try:
-            subprocess.run(['uv', 'run', 'pre-commit', 'install'], cwd=project_dir, check=True, capture_output=True)
+            subprocess.run(['uv', 'run', 'pre-commit', 'install'], cwd=project_dir, check=True, capture_output=True, timeout=60)
             print("✅ Pre-commit hooks installed")
         except subprocess.CalledProcessError:
             print("⚠️  Pre-commit installation skipped (not configured)")
