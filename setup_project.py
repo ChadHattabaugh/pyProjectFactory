@@ -470,19 +470,70 @@ When helping with this project:
     (project_dir / 'CLAUDE.md').write_text(claude_content)
 
 
-def initialize_git(project_dir: Path) -> None:
-    """Initialize git repository."""
+def check_dependencies() -> None:
+    """Check if required tools are installed."""
+    required_tools = {
+        'uv': 'https://docs.astral.sh/uv/getting-started/installation/',
+        'just': 'https://github.com/casey/just#installation'
+    }
+    
+    missing_tools = []
+    for tool, install_url in required_tools.items():
+        try:
+            subprocess.run([tool, '--version'], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            missing_tools.append((tool, install_url))
+    
+    if missing_tools:
+        print("\n❌ Missing required tools:")
+        for tool, url in missing_tools:
+            print(f"  - {tool}: {url}")
+        print("\nPlease install the missing tools and run setup again.")
+        exit(1)
+
+
+def initialize_git(project_dir: Path, info: Dict[str, Any]) -> None:
+    """Initialize git repository and create development branch."""
     try:
         subprocess.run(['git', 'init'], cwd=project_dir, check=True, capture_output=True)
         subprocess.run(['git', 'add', '.'], cwd=project_dir, check=True, capture_output=True)
-        subprocess.run(['git', 'commit', '-m', 'Initial commit'], cwd=project_dir, check=True, capture_output=True)
-        print("✅ Git repository initialized")
+        subprocess.run(['git', 'commit', '-m', 'Initial project setup\n\n🤖 Generated with Claude Code'], cwd=project_dir, check=True, capture_output=True)
+        
+        # Create and switch to develop branch following GitFlow
+        subprocess.run(['git', 'checkout', '-b', 'develop'], cwd=project_dir, check=True, capture_output=True)
+        
+        print("✅ Git repository initialized with develop branch")
     except subprocess.CalledProcessError as e:
         print(f"⚠️  Git initialization failed: {e}")
 
 
+def setup_development_environment(project_dir: Path) -> None:
+    """Set up the development environment automatically."""
+    try:
+        print("🔧 Setting up development environment...")
+        
+        # Run uv sync to install dependencies
+        subprocess.run(['uv', 'sync', '--extra', 'dev'], cwd=project_dir, check=True, capture_output=True)
+        
+        # Install pre-commit hooks if available
+        try:
+            subprocess.run(['uv', 'run', 'pre-commit', 'install'], cwd=project_dir, check=True, capture_output=True)
+            print("✅ Pre-commit hooks installed")
+        except subprocess.CalledProcessError:
+            print("⚠️  Pre-commit installation skipped (not configured)")
+        
+        print("✅ Development environment ready")
+        
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️  Development environment setup failed: {e}")
+        print("You can manually run 'just setup' or 'uv sync --extra dev' in the project directory")
+
+
 def main() -> None:
     """Main setup function."""
+    # Check dependencies first
+    check_dependencies()
+    
     # Collect project information
     info = collect_project_info()
 
@@ -509,19 +560,24 @@ def main() -> None:
     # Create CLAUDE.md
     create_claude_md(project_dir, info)
 
-    # Initialize git
-    initialize_git(project_dir)
+    # Initialize git with development branch
+    initialize_git(project_dir, info)
+
+    # Set up development environment automatically
+    setup_development_environment(project_dir)
 
     print(f"\n🎉 Project '{info['project_name']}' created successfully!")
     print(f"📁 Location: {project_dir}")
-    print("\n🚀 Next steps:")
+    print("\n✅ Setup complete! Your project is ready for development.")
+    print(f"\n🚀 To get started:")
     print(f"1. cd {info['project_name']}")
-    print("2. just setup")
-    print("3. just test")
-    print("4. Start coding!")
+    print("2. just test      # Run tests to verify setup")
+    print("3. Start coding!")
 
     if info.get('use_jupyter', False):
-        print("5. just jupyter  # Start Jupyter Lab")
+        print("4. just jupyter   # Start Jupyter Lab for data analysis")
+    
+    print(f"\n📚 See CLAUDE.md for detailed development workflow and commands.")
 
 
 if __name__ == "__main__":
