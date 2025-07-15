@@ -2,6 +2,7 @@
 """Interactive project setup script for the Python template."""
 
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -11,14 +12,42 @@ from typing import Any, Dict, List, Optional
 
 def validate_email(email: str) -> bool:
     """Validate email format."""
-    pattern = r'^[^@]+@[^@]+\.[^@]+$'
-    return bool(re.match(pattern, email))
+    if not email or len(email) < 5 or len(email) > 254:
+        return False
+    
+    # Basic email pattern with more robust validation
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not re.match(pattern, email):
+        return False
+    
+    # Check for valid domain part
+    local, domain = email.rsplit('@', 1)
+    if len(local) > 64 or len(domain) > 253:
+        return False
+        
+    return True
 
 
 def validate_project_name(name: str) -> bool:
     """Validate project name format."""
-    pattern = r'^[a-z][a-z0-9-]*$'
-    return bool(re.match(pattern, name))
+    if not name or len(name) < 2 or len(name) > 214:
+        return False
+    
+    # Must start with letter, can contain letters, numbers, hyphens
+    # but not end with hyphen
+    pattern = r'^[a-z][a-z0-9-]*[a-z0-9]$'
+    if len(name) == 1:
+        pattern = r'^[a-z]$'
+    
+    if not re.match(pattern, name):
+        return False
+    
+    # Check for reserved names
+    reserved_names = {'test', 'tests', 'src', 'lib', 'bin', 'tmp', 'temp', 'build', 'dist'}
+    if name in reserved_names:
+        return False
+        
+    return True
 
 
 def get_git_config(key: str) -> Optional[str]:
@@ -226,6 +255,9 @@ def replace_template_vars(file_path: Path, replacements: Dict[str, Any]) -> None
         file_path.write_text(content, encoding='utf-8')
     except UnicodeDecodeError:
         # Skip binary files
+        pass
+    except (PermissionError, OSError) as e:
+        print(f"⚠️  Could not process {file_path}: {e}")
         pass
 
 
@@ -470,37 +502,112 @@ When helping with this project:
     (project_dir / 'CLAUDE.md').write_text(claude_content)
 
 
-def check_dependencies() -> None:
-    """Check if required tools are installed."""
-    required_tools = {
-        'uv': 'https://docs.astral.sh/uv/getting-started/installation/',
-        'just': 'https://github.com/casey/just#installation'
-    }
-    
-    missing_tools = []
-    for tool, install_url in required_tools.items():
+def install_just() -> bool:
+    """Install just automatically using the official installation script."""
+    try:
+        # First check if just is already installed
         try:
-            subprocess.run([tool, '--version'], capture_output=True, check=True)
+            subprocess.run(['just', '--version'], capture_output=True, check=True, timeout=10)
+            print("✅ just is already installed")
+            return True
         except (subprocess.CalledProcessError, FileNotFoundError):
-            missing_tools.append((tool, install_url))
-    
-    if missing_tools:
-        print("\n❌ Missing required tools:")
-        for tool, url in missing_tools:
-            print(f"  - {tool}: {url}")
-        print("\nPlease install the missing tools and run setup again.")
+            pass  # Not installed, continue with installation
+        
+        print("Installing just...")
+        
+        if platform.system() == "Windows":
+            # Use PowerShell for Windows
+            cmd = [
+                "powershell", "-Command",
+                "irm https://just.systems/install.ps1 | iex"
+            ]
+        else:
+            # Use curl for Unix-like systems (Linux, macOS)
+            # Install to ~/.local/bin which is commonly in PATH
+            install_dir = os.path.expanduser("~/.local/bin")
+            os.makedirs(install_dir, exist_ok=True)
+            
+            cmd = [
+                "bash", "-c",
+                f"curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to {install_dir}"
+            ]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=300)
+        
+        # Verify installation was successful
+        try:
+            subprocess.run(['just', '--version'], capture_output=True, check=True, timeout=10)
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # If not found in PATH, try common locations
+            if platform.system() != "Windows":
+                local_bin = os.path.expanduser("~/.local/bin/just")
+                if os.path.exists(local_bin):
+                    print(f"✅ just installed to {local_bin}")
+                    print("⚠️  Please ensure ~/.local/bin is in your PATH")
+                    return True
+            return False
+            
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Failed to install just: {e}")
+        if e.stderr:
+            print(f"Error output: {e.stderr}")
+        return False
+    except Exception as e:
+        print(f"❌ Unexpected error installing just: {e}")
+        return False
+
+
+def check_dependencies() -> None:
+    """Check if required tools are installed and offer to install them."""
+    # Check uv first (required for project setup)
+    try:
+        subprocess.run(['uv', '--version'], capture_output=True, check=True, timeout=10)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("\n❌ Missing required tool: uv")
+        print("Please install uv first: https://docs.astral.sh/uv/getting-started/installation/")
+        print("uv is required for Python dependency management.")
         exit(1)
+    
+    # Check just with automatic installation option
+    try:
+        subprocess.run(['just', '--version'], capture_output=True, check=True)
+        print("✅ just is already installed")
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("\n⚠️  just is not installed.")
+        print("just is a command runner that provides convenient development commands.")
+        
+        response = input("Would you like to install just automatically? (y/n): ").lower().strip()
+        
+        if response in ['y', 'yes']:
+            if install_just():
+                # Verify installation one more time
+                try:
+                    subprocess.run(['just', '--version'], capture_output=True, check=True, timeout=10)
+                except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+                    print("⚠️  just was installed but may not be in your PATH.")
+                    print("You may need to restart your terminal or add ~/.local/bin to your PATH.")
+                    print("Manual installation guide: https://github.com/casey/just#installation")
+            else:
+                print("❌ Failed to install just automatically.")
+                print("Please install just manually: https://github.com/casey/just#installation")
+                exit(1)
+        else:
+            print("❌ just is required for this project's development workflow.")
+            print("Please install just manually: https://github.com/casey/just#installation")
+            print("Then run setup again.")
+            exit(1)
 
 
 def initialize_git(project_dir: Path, info: Dict[str, Any]) -> None:
     """Initialize git repository and create development branch."""
     try:
-        subprocess.run(['git', 'init'], cwd=project_dir, check=True, capture_output=True)
-        subprocess.run(['git', 'add', '.'], cwd=project_dir, check=True, capture_output=True)
-        subprocess.run(['git', 'commit', '-m', 'Initial project setup\n\n🤖 Generated with Claude Code'], cwd=project_dir, check=True, capture_output=True)
+        subprocess.run(['git', 'init'], cwd=project_dir, check=True, capture_output=True, timeout=30)
+        subprocess.run(['git', 'add', '.'], cwd=project_dir, check=True, capture_output=True, timeout=60)
+        subprocess.run(['git', 'commit', '-m', 'Initial project setup\n\n🤖 Generated with Claude Code'], cwd=project_dir, check=True, capture_output=True, timeout=30)
         
         # Create and switch to develop branch following GitFlow
-        subprocess.run(['git', 'checkout', '-b', 'develop'], cwd=project_dir, check=True, capture_output=True)
+        subprocess.run(['git', 'checkout', '-b', 'develop'], cwd=project_dir, check=True, capture_output=True, timeout=30)
         
         print("✅ Git repository initialized with develop branch")
     except subprocess.CalledProcessError as e:
@@ -513,11 +620,11 @@ def setup_development_environment(project_dir: Path) -> None:
         print("🔧 Setting up development environment...")
         
         # Run uv sync to install dependencies
-        subprocess.run(['uv', 'sync', '--extra', 'dev'], cwd=project_dir, check=True, capture_output=True)
+        subprocess.run(['uv', 'sync', '--extra', 'dev'], cwd=project_dir, check=True, capture_output=True, timeout=300)
         
         # Install pre-commit hooks if available
         try:
-            subprocess.run(['uv', 'run', 'pre-commit', 'install'], cwd=project_dir, check=True, capture_output=True)
+            subprocess.run(['uv', 'run', 'pre-commit', 'install'], cwd=project_dir, check=True, capture_output=True, timeout=60)
             print("✅ Pre-commit hooks installed")
         except subprocess.CalledProcessError:
             print("⚠️  Pre-commit installation skipped (not configured)")
