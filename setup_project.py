@@ -2,6 +2,7 @@
 """Interactive project setup script for the Python template."""
 
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -470,26 +471,94 @@ When helping with this project:
     (project_dir / 'CLAUDE.md').write_text(claude_content)
 
 
-def check_dependencies() -> None:
-    """Check if required tools are installed."""
-    required_tools = {
-        'uv': 'https://docs.astral.sh/uv/getting-started/installation/',
-        'just': 'https://github.com/casey/just#installation'
-    }
-    
-    missing_tools = []
-    for tool, install_url in required_tools.items():
+def install_just() -> bool:
+    """Install just automatically using the official installation script."""
+    try:
+        print("Installing just...")
+        
+        if platform.system() == "Windows":
+            # Use PowerShell for Windows
+            cmd = [
+                "powershell", "-Command",
+                "irm https://just.systems/install.ps1 | iex"
+            ]
+        else:
+            # Use curl for Unix-like systems (Linux, macOS)
+            # Install to ~/.local/bin which is commonly in PATH
+            install_dir = os.path.expanduser("~/.local/bin")
+            os.makedirs(install_dir, exist_ok=True)
+            
+            cmd = [
+                "bash", "-c",
+                f"curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to {install_dir}"
+            ]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        
+        # Verify installation was successful
         try:
-            subprocess.run([tool, '--version'], capture_output=True, check=True)
+            subprocess.run(['just', '--version'], capture_output=True, check=True)
+            return True
         except (subprocess.CalledProcessError, FileNotFoundError):
-            missing_tools.append((tool, install_url))
-    
-    if missing_tools:
-        print("\n❌ Missing required tools:")
-        for tool, url in missing_tools:
-            print(f"  - {tool}: {url}")
-        print("\nPlease install the missing tools and run setup again.")
+            # If not found in PATH, try common locations
+            if platform.system() != "Windows":
+                local_bin = os.path.expanduser("~/.local/bin/just")
+                if os.path.exists(local_bin):
+                    print(f"✅ just installed to {local_bin}")
+                    print("⚠️  Please ensure ~/.local/bin is in your PATH")
+                    return True
+            return False
+            
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Failed to install just: {e}")
+        if e.stderr:
+            print(f"Error output: {e.stderr}")
+        return False
+    except Exception as e:
+        print(f"❌ Unexpected error installing just: {e}")
+        return False
+
+
+def check_dependencies() -> None:
+    """Check if required tools are installed and offer to install them."""
+    # Check uv first (required for project setup)
+    try:
+        subprocess.run(['uv', '--version'], capture_output=True, check=True)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("\n❌ Missing required tool: uv")
+        print("Please install uv first: https://docs.astral.sh/uv/getting-started/installation/")
+        print("uv is required for Python dependency management.")
         exit(1)
+    
+    # Check just with automatic installation option
+    try:
+        subprocess.run(['just', '--version'], capture_output=True, check=True)
+        print("✅ just is already installed")
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("\n⚠️  just is not installed.")
+        print("just is a command runner that provides convenient development commands.")
+        
+        response = input("Would you like to install just automatically? (y/n): ").lower().strip()
+        
+        if response in ['y', 'yes']:
+            if install_just():
+                print("✅ just installed successfully")
+                # Verify installation one more time
+                try:
+                    subprocess.run(['just', '--version'], capture_output=True, check=True)
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    print("⚠️  just was installed but may not be in your PATH.")
+                    print("You may need to restart your terminal or add ~/.local/bin to your PATH.")
+                    print("Manual installation guide: https://github.com/casey/just#installation")
+            else:
+                print("❌ Failed to install just automatically.")
+                print("Please install just manually: https://github.com/casey/just#installation")
+                exit(1)
+        else:
+            print("❌ just is required for this project's development workflow.")
+            print("Please install just manually: https://github.com/casey/just#installation")
+            print("Then run setup again.")
+            exit(1)
 
 
 def initialize_git(project_dir: Path, info: Dict[str, Any]) -> None:
