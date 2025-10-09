@@ -416,7 +416,6 @@ nox -s safety       # Security check
 ```bash
 # Start development environment
 nox -s docker_dev
-# or: nox -s docker_dev
 
 # Access development shell
 docker compose exec dev bash
