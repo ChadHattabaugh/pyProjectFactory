@@ -10,7 +10,7 @@ A comprehensive, modern Python project template with enterprise-grade automation
 - **Multi-Python Support**: Test against Python 3.9-3.12
 - **Quality Assurance**: Pre-commit hooks, security scanning, type checking
 - **Automation**: GitHub Actions CI/CD, automated dependency updates, repository protection
-- **Development Experience**: VS Code configuration, Docker environments, justfile commands
+- **Development Experience**: VS Code configuration, Docker environments, nox automation
 - **GitFlow Workflow**: Automated branch protection, naming conventions, AI-assisted reviews
 - **Data Science Ready**: Optional PySpark, Jupyter, Docker data environment
 - **Template System**: Interactive setup with project customization
@@ -31,7 +31,7 @@ A comprehensive, modern Python project template with enterprise-grade automation
    python setup_project.py
    ```
    The setup script will:
-   - Check for required tools (`uv`, `just`) and provide installation links if missing
+   - Check for required tools (only `uv`) and provide installation links if missing
    - Create your project with all template files
    - Initialize git repository with develop branch
    - Automatically set up the development environment
@@ -41,7 +41,7 @@ A comprehensive, modern Python project template with enterprise-grade automation
 6. **Start developing** (environment is already set up):
    ```bash
    cd your-project-name
-   just test     # Run tests to verify setup
+   nox -s tests     # Run tests to verify setup
    ```
 
 ### Alternative Methods
@@ -79,7 +79,7 @@ copier copy https://github.com/ChadHattabaugh/pyProjectFactory.git my-new-projec
 ### Development Environment
 - **VS Code**: Complete configuration with extensions and tasks
 - **Docker**: Development and data science environments
-- **justfile**: Convenient command runner
+- **run.py**: Simple setup script
 - **GitHub Actions**: CI/CD with matrix testing
 - **Dependabot**: Automated dependency updates
 - **Repository Protection**: Automated GitFlow setup with branch protection and naming rules
@@ -107,29 +107,29 @@ copier copy https://github.com/ChadHattabaugh/pyProjectFactory.git my-new-projec
 
 ```bash
 # Setup and development
-just setup          # Setup development environment
-just install         # Install dependencies only
-just test           # Run tests
-just test-cov       # Run tests with coverage
-just ci             # Full CI pipeline
+python run.py          # Setup development environment
+uv sync         # Install dependencies only
+nox -s tests           # Run tests
+nox -s tests-cov       # Run tests with coverage
+nox -s ci             # Full CI pipeline
 
 # Code quality
-just format         # Format code with ruff
-just lint           # Lint code
-just type-check     # Type checking with mypy
-just security       # Security scans
-just qa             # All quality checks
+nox -s format         # Format code with ruff
+nox -s lint           # Lint code
+nox -s type_check     # Type checking with mypy
+nox -s safety       # Security scans
+nox -s ci             # All quality checks
 
 # Docker environments
-just docker-dev     # Start development container
-just docker-jupyter # Start Jupyter container
-just docker-shell   # Open shell in container
-just docker-down    # Stop containers
+nox -s docker_dev     # Start development container
+nox -s docker_jupyter # Start Jupyter container
+docker compose exec dev bash   # Open shell in container
+docker compose down    # Stop containers
 
 # Utilities
-just clean          # Clean build artifacts
-just build          # Build package
-just info           # Show project information
+nox -s clean          # Clean build artifacts
+uv build          # Build package
+nox -l           # Show project information
 ```
 
 ## Template Structure
@@ -140,7 +140,7 @@ pyProjectFactory/
 ├── copier.yml                 # Copier template configuration
 ├── pyproject.toml            # Modern Python packaging
 ├── noxfile.py                # Multi-environment automation
-├── justfile                  # Development commands
+├── run.py                    # Setup script
 ├── .github/workflows/        # CI/CD pipelines & repository setup
 ├── .vscode/                  # VS Code configuration
 ├── src/{{PROJECT_NAME}}/     # Source code template
@@ -160,7 +160,7 @@ pyProjectFactory/
 - **uv** is faster than pip/poetry for dependency management
 - **ruff** is 100x faster than traditional linters
 - **nox** handles multi-version testing better than tox
-- **justfile** provides better ergonomics than Make
+- **nox** provides better task automation than Make
 
 ### Best Practices Built-In
 - Src layout for better package structure
