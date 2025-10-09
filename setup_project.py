@@ -380,7 +380,6 @@ uv run pytest --cov
 
 # Test all Python versions
 nox -s tests
-# or: nox -s tests
 ```
 
 ### Code Quality
