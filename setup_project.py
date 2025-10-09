@@ -401,7 +401,6 @@ nox -s ci
 ```bash
 # Full CI pipeline
 nox -s ci
-# or: nox -s ci
 
 # Individual nox sessions
 nox -s tests        # Run tests
