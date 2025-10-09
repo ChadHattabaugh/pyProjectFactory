@@ -102,8 +102,6 @@ docker compose down
 ```bash
 # Start Jupyter Lab locally
 nox -s jupyter
-# or: nox -s jupyter
-
 # Start Jupyter in Docker
 nox -s docker_jupyter
 
