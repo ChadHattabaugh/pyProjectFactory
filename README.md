@@ -32,10 +32,14 @@ A comprehensive, modern Python project template with enterprise-grade automation
    ```
    The setup script will:
    - Check for required tools (only `uv`) and provide installation links if missing
-   - Create your project with all template files
+   - Prompt for project configuration (name, type, features, etc.)
+   - Create your project with customized template files
+   - Remove unused template files and documentation
+   - Clean up based on your feature selections (notebooks, Docker, Spark, etc.)
    - Initialize git repository with develop branch
    - Automatically set up the development environment
    - Install dependencies and pre-commit hooks
+   - Verify no template placeholders remain
 
 5. **Repository protection and full CI/CD will be automatically configured** (see [Repository Setup](docs/REPOSITORY_SETUP.md))
 6. **Start developing** (environment is already set up):
