@@ -760,19 +760,11 @@ def main() -> None:
     setup_mode = None  # 'in_place', 'new_folder', or None
 
     if is_template:
-        # Template detected - offer in-place replacement (default: yes)
+        # Template detected - automatically use in-place replacement
         print("\n📋 Template repository detected!")
         print("This appears to be a repository created from the GitHub template.")
-        setup_in_place_choice = get_user_input(
-            "Replace template with new project in current directory?",
-            default="y",
-            is_bool=True
-        )
-        if setup_in_place_choice:
-            setup_mode = 'in_place'
-        else:
-            # User declined in-place setup, ask for new folder
-            setup_mode = 'new_folder'
+        print("Setting up project in place (replacing template)...")
+        setup_mode = 'in_place'
     else:
         # Not a template repo - prompt for setup location
         print("\n📁 Choose setup location:")

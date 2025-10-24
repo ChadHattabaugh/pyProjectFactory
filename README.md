@@ -33,10 +33,13 @@ A comprehensive, modern Python project template with enterprise-grade automation
    The setup script will:
    - Check for required tools (only `uv`) and provide installation links if missing
    - Prompt for project configuration (name, type, features, etc.)
+   - **Smart setup mode detection**:
+     - **Template repo**: Automatically replaces template files in place
+     - **Direct clone**: Prompts for location (in-place or new folder)
    - Create your project with customized template files
    - Remove unused template files and documentation
    - Clean up based on your feature selections (notebooks, Docker, Spark, etc.)
-   - Initialize git repository with develop branch
+   - Initialize git repository with develop branch (only if not already present)
    - Automatically set up the development environment
    - Install dependencies and pre-commit hooks
    - Verify no template placeholders remain
@@ -68,6 +71,53 @@ pip install copier
 # Generate project
 copier copy https://github.com/ChadHattabaugh/pyProjectFactory.git my-new-project
 ```
+
+## Setup Modes
+
+The setup script intelligently detects your repository type and offers appropriate setup options:
+
+### Template Repository (GitHub "Use this template")
+When you create a repository from the GitHub template and run `setup_project.py`:
+- **Automatic in-place setup** - No prompts, seamlessly replaces template files
+- Template files are replaced with your new project in the current directory
+- Preserves existing `.git` directory (no re-initialization)
+- Perfect for the GitHub template workflow
+
+### Direct Clone
+When you directly clone the repository and run `setup_project.py`:
+- **Flexible location choice** - Prompted to choose setup location:
+  - **In-place**: Replace template files in current directory
+  - **New folder**: Create project in a new subdirectory (original behavior)
+- Git initialization only happens for new folders
+- Existing git repositories are preserved
+
+### Configuration Options
+
+During setup, you'll be prompted for:
+
+#### Project Information
+- **Project name** - Lowercase with hyphens (becomes package name with underscores)
+- **Description** - Brief project description
+- **Author details** - Name and email (auto-detected from git config)
+- **GitHub username** - For repository URLs and badges
+- **Project type** - Choose from:
+  - `app` - Application with CLI support
+  - `library` - Python package/library
+  - `package` - Distributable package
+  - `data` - Data science project
+- **Python version** - Minimum supported version (3.9, 3.10, 3.11, 3.12)
+- **License** - MIT, Apache-2.0, GPL-3.0, BSD-3-Clause, or Proprietary
+
+#### Optional Features
+- **Docker configuration** - Development and data science containers
+- **Pre-commit hooks** - Automated code quality checks
+- **GitHub Actions CI/CD** - Automated testing and deployment
+- **Jupyter notebook support** - Lab environment and notebook quality checks
+- **PySpark configuration** - Spark utilities and setup scripts
+- **CLI interface** - Command-line interface with Click/Typer
+- **CLAUDE.md** - AI context file for Claude Code
+
+These options control which files are included and which template files are removed after setup.
 
 ## What You Get
 
