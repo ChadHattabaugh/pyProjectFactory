@@ -617,6 +617,33 @@ def verify_template_placeholders(project_dir: Path, info: Dict[str, Any]) -> Lis
     return files_with_placeholders
 
 
+def is_template_repo() -> bool:
+    """Check if current directory is a cloned template repository.
+
+    Returns:
+        True if current directory appears to be a template repo, False otherwise
+    """
+    cwd = Path.cwd()
+
+    # Check for template markers
+    markers = [
+        cwd / 'setup_project.py',
+        cwd / 'copier.yml',
+        cwd / 'src' / '{{PROJECT_NAME}}'
+    ]
+
+    return all(marker.exists() for marker in markers)
+
+
+def is_git_initialized() -> bool:
+    """Check if current directory already has git initialized.
+
+    Returns:
+        True if .git directory exists, False otherwise
+    """
+    return (Path.cwd() / '.git').exists()
+
+
 def check_dependencies() -> None:
     """Check if required tools are installed."""
     # Check uv (required for project setup)
@@ -649,32 +676,135 @@ def setup_development_environment(project_dir: Path) -> None:
     """Set up the development environment automatically."""
     try:
         print("🔧 Setting up development environment...")
-        
+
         # Run uv sync to install dependencies
         subprocess.run(['uv', 'sync', '--extra', 'dev'], cwd=project_dir, check=True, capture_output=True, timeout=300)
-        
+
         # Install pre-commit hooks if available
         try:
             subprocess.run(['uv', 'run', 'pre-commit', 'install'], cwd=project_dir, check=True, capture_output=True, timeout=60)
             print("✅ Pre-commit hooks installed")
         except subprocess.CalledProcessError:
             print("⚠️  Pre-commit installation skipped (not configured)")
-        
+
         print("✅ Development environment ready")
-        
+
     except subprocess.CalledProcessError as e:
         print(f"⚠️  Development environment setup failed: {e}")
         print("You can manually run 'python run.py' or 'uv sync --extra dev' in the project directory")
 
 
+def setup_in_place(project_dir: Path, info: Dict[str, Any]) -> None:
+    """Setup project in place, replacing template files.
+
+    Args:
+        project_dir: Path to the current directory (where template exists)
+        info: Dictionary containing project configuration
+    """
+    import tempfile
+
+    print(f"\n🔧 Setting up project '{info['project_name']}' in place...")
+
+    # Create temporary directory for processing
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+
+        # Process template files into temp directory
+        print("📦 Processing template files...")
+        process_template_directory(project_dir, temp_path, info)
+
+        # Create CLAUDE.md in temp directory
+        create_claude_md(temp_path, info)
+
+        # Remove template-specific files from current directory
+        print("🧹 Cleaning up template files...")
+        cleanup_template_files(project_dir, info)
+
+        # Copy processed files from temp to current directory
+        print("📋 Installing new project files...")
+        for item in temp_path.rglob('*'):
+            if item.is_file():
+                rel_path = item.relative_to(temp_path)
+                dst_path = project_dir / rel_path
+                dst_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(item, dst_path)
+
+    # Initialize git only if not already initialized
+    if not is_git_initialized():
+        initialize_git(project_dir, info)
+    else:
+        print("✅ Git already initialized, preserving existing repository")
+
+    # Set up development environment
+    setup_development_environment(project_dir)
+
+    # Verify no template placeholders remain
+    files_with_placeholders = verify_template_placeholders(project_dir, info)
+    if files_with_placeholders:
+        print("\n⚠️  Warning: Template placeholders found in the following files:")
+        for file in files_with_placeholders[:5]:  # Show first 5
+            print(f"   - {file}")
+        if len(files_with_placeholders) > 5:
+            print(f"   ... and {len(files_with_placeholders) - 5} more")
+
+    print(f"\n✅ Project '{info['project_name']}' created successfully in place!")
+    print(f"📁 Location: {project_dir}")
+    print("\n✅ Setup complete! Your project is ready for development.")
+    print(f"\n🚀 To get started:")
+    print("1. nox -l         # List available tasks")
+    print("2. nox -s tests   # Run tests to verify setup")
+    print("3. Start coding!")
+
+    if info.get('use_jupyter', False):
+        print("4. nox -s jupyter # Start Jupyter Lab for data analysis")
+
+    print("\n📚 See CLAUDE.md for detailed development workflow and commands.")
+
+
 def main() -> None:
-    """Main setup function."""
+    """Main setup function with smart template detection."""
     # Check dependencies first
     check_dependencies()
 
     # Collect project information
     info = collect_project_info()
 
+    # Smart workflow detection
+    is_template = is_template_repo()
+
+    if is_template:
+        # Repository was created from GitHub template
+        print("\n🔍 Template repository detected!")
+        in_place = get_user_input(
+            "Replace template with new project in current directory?",
+            default="y",
+            is_bool=True
+        )
+
+        if in_place:
+            # In-place setup
+            project_dir = Path.cwd()
+            setup_in_place(project_dir, info)
+            return
+        else:
+            # User chose to create in new folder instead
+            print("\n📁 Creating project in new folder...")
+
+    else:
+        # Not a template repository - offer in-place or new folder
+        in_place = get_user_input(
+            "Setup project in current directory (in-place)?",
+            default="n",
+            is_bool=True
+        )
+
+        if in_place:
+            # In-place setup
+            project_dir = Path.cwd()
+            setup_in_place(project_dir, info)
+            return
+
+    # New folder setup (original behavior)
     print(f"\n🔧 Setting up project '{info['project_name']}'...")
 
     # Create project directory
@@ -698,7 +828,7 @@ def main() -> None:
     # Create CLAUDE.md
     create_claude_md(project_dir, info)
 
-    # Initialize git with development branch
+    # Initialize git with development branch (always for new folders)
     initialize_git(project_dir, info)
 
     # Set up development environment automatically
