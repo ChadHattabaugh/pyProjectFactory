@@ -26,7 +26,7 @@
 ├── tests/                             # Test files
 ├── pyproject.toml                     # Project configuration
 ├── noxfile.py                         # Automation tasks
-├── justfile                           # Development commands
+├── run.py                             # Setup script
 ├── README.md                          # Documentation
 {% if PROJECT_TYPE == 'data' %}├── notebooks/                         # Jupyter notebooks
 ├── data/                              # Data files (raw, processed, external)
@@ -48,37 +48,35 @@ pre-commit install
 ### Testing
 ```bash
 # Run tests
-just test
+nox -s tests
 # or: uv run pytest
 
 # Test with coverage
-just test-cov
+uv run pytest --cov
 
 # Test all Python versions
-just test-all
-# or: nox -s tests
+nox -s tests
 ```
 
 ### Code Quality
 ```bash
 # Format code
-just format
+nox -s format
 
 # Lint code  
-just lint
+nox -s lint
 
 # Type check
-just type-check
+nox -s type_check
 
 # All quality checks
-just qa
+nox -s ci
 ```
 
 ### Automation
 ```bash
 # Full CI pipeline
-just ci
-# or: nox -s ci
+nox -s ci
 
 # Individual nox sessions
 nox -s tests        # Run tests
@@ -90,25 +88,22 @@ nox -s safety       # Security check
 {% if USE_DOCKER %}### Docker Development
 ```bash
 # Start development environment
-just docker-dev
-# or: nox -s docker_dev
+nox -s docker_dev
 
 # Access development shell
-just docker-shell
+docker compose exec dev bash
 
 # Stop services
-just docker-down
+docker compose down
 ```
 {% endif %}
 
 {% if USE_JUPYTER %}### Jupyter Notebooks
 ```bash
 # Start Jupyter Lab locally
-just jupyter
-# or: nox -s jupyter
-
+nox -s jupyter
 # Start Jupyter in Docker
-just docker-jupyter
+nox -s docker_jupyter
 
 # Check notebook code quality
 nox -s data_quality
@@ -131,19 +126,19 @@ spark.stop()
 
 ## Key Commands
 
-- `just setup` - Setup development environment
-- `just test` - Run tests
-- `just ci` - Run full CI pipeline
-- `just format` - Format and fix code
-- `just clean` - Clean build artifacts
-- `just info` - Show project information
+- `python run.py` - Setup development environment
+- `nox -s tests` - Run tests
+- `nox -s ci` - Run full CI pipeline
+- `nox -s format` - Format and fix code
+- `nox -s clean` - Clean build artifacts
+- `nox -l` - Show project information
 
 ## Notes for Claude
 
 - This project uses **uv** for dependency management (faster than pip/poetry)
 - **ruff** handles all code formatting and linting (replaces black+isort+flake8)
 - **nox** provides automation across multiple Python versions
-- **justfile** provides convenient development commands
+- **run.py** provides simple setup script
 - All tools are configured in `pyproject.toml`
 
 When helping with this project:
@@ -151,7 +146,7 @@ When helping with this project:
 2. Follow the established patterns in the codebase
 3. Add tests for new functionality
 4. Update documentation as needed
-5. Run `just ci` before committing changes
+5. Run `nox -s ci` before committing changes
 
 {% if PROJECT_TYPE == 'data' %}## Data Project Specifics
 
@@ -203,7 +198,7 @@ tests/
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make changes and add tests
-4. Run quality checks: `just ci`
+4. Run quality checks: `nox -s ci`
 5. Commit changes: `git commit -m "Description"`
 6. Push and create a pull request
 
@@ -212,7 +207,7 @@ tests/
 {% if PROJECT_TYPE == 'package' %}### Package Distribution
 ```bash
 # Build package
-just build
+uv build
 
 # Upload to PyPI (configure tokens first)
 uv publish

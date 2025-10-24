@@ -354,7 +354,7 @@ def create_claude_md(project_dir: Path, info: Dict[str, Any]) -> None:
 ├── tests/                                 # Test files
 ├── pyproject.toml                        # Project configuration
 ├── noxfile.py                            # Automation tasks
-├── justfile                              # Development commands
+├── run.py                                # Setup script
 └── README.md                             # Documentation
 ```
 
@@ -372,37 +372,35 @@ pre-commit install
 ### Testing
 ```bash
 # Run tests
-just test
+nox -s tests
 # or: uv run pytest
 
 # Test with coverage
-just test-cov
+uv run pytest --cov
 
 # Test all Python versions
-just test-all
-# or: nox -s tests
+nox -s tests
 ```
 
 ### Code Quality
 ```bash
 # Format code
-just format
+nox -s format
 
 # Lint code  
-just lint
+nox -s lint
 
 # Type check
-just type-check
+nox -s type_check
 
 # All quality checks
-just qa
+nox -s ci
 ```
 
 ### Automation
 ```bash
 # Full CI pipeline
-just ci
-# or: nox -s ci
+nox -s ci
 
 # Individual nox sessions
 nox -s tests        # Run tests
@@ -417,14 +415,13 @@ nox -s safety       # Security check
         claude_content += """### Docker Development
 ```bash
 # Start development environment
-just docker-dev
-# or: nox -s docker_dev
+nox -s docker_dev
 
 # Access development shell
-just docker-shell
+docker compose exec dev bash
 
 # Stop services
-just docker-down
+docker compose down
 ```
 
 """
@@ -433,11 +430,9 @@ just docker-down
         claude_content += """### Jupyter Notebooks
 ```bash
 # Start Jupyter Lab locally
-just jupyter
-# or: nox -s jupyter
-
+nox -s jupyter
 # Start Jupyter in Docker
-just docker-jupyter
+nox -s docker_jupyter
 
 # Check notebook code quality
 nox -s data_quality
@@ -463,19 +458,19 @@ spark.stop()
 
     claude_content += """## Key Commands
 
-- `just setup` - Setup development environment
-- `just test` - Run tests
-- `just ci` - Run full CI pipeline
-- `just format` - Format and fix code
-- `just clean` - Clean build artifacts
-- `just info` - Show project information
+- `python run.py` - Setup development environment
+- `nox -s tests` - Run tests
+- `nox -s ci` - Run full CI pipeline
+- `nox -s format` - Format and fix code
+- `nox -s clean` - Clean build artifacts
+- `nox -l` - Show project information
 
 ## Notes for Claude
 
 - This project uses **uv** for dependency management (faster than pip/poetry)
 - **ruff** handles all code formatting and linting (replaces black+isort+flake8)
 - **nox** provides automation across multiple Python versions
-- **justfile** provides convenient development commands
+- **nox** provides convenient development commands
 - All tools are configured in `pyproject.toml`
 
 When helping with this project:
@@ -483,7 +478,7 @@ When helping with this project:
 2. Follow the established patterns in the codebase
 3. Add tests for new functionality
 4. Update documentation as needed
-5. Run `just ci` before committing changes
+5. Run `nox -s ci` before committing changes
 
 """
 
@@ -502,101 +497,17 @@ When helping with this project:
     (project_dir / 'CLAUDE.md').write_text(claude_content)
 
 
-def install_just() -> bool:
-    """Install just automatically using the official installation script."""
-    try:
-        # First check if just is already installed
-        try:
-            subprocess.run(['just', '--version'], capture_output=True, check=True, timeout=10)
-            print("✅ just is already installed")
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            pass  # Not installed, continue with installation
-        
-        print("Installing just...")
-        
-        if platform.system() == "Windows":
-            # Use PowerShell for Windows
-            cmd = [
-                "powershell", "-Command",
-                "irm https://just.systems/install.ps1 | iex"
-            ]
-        else:
-            # Use curl for Unix-like systems (Linux, macOS)
-            # Install to ~/.local/bin which is commonly in PATH
-            install_dir = os.path.expanduser("~/.local/bin")
-            os.makedirs(install_dir, exist_ok=True)
-            
-            cmd = [
-                "bash", "-c",
-                f"curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to {install_dir}"
-            ]
-        
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=300)
-        
-        # Verify installation was successful
-        try:
-            subprocess.run(['just', '--version'], capture_output=True, check=True, timeout=10)
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            # If not found in PATH, try common locations
-            if platform.system() != "Windows":
-                local_bin = os.path.expanduser("~/.local/bin/just")
-                if os.path.exists(local_bin):
-                    print(f"✅ just installed to {local_bin}")
-                    print("⚠️  Please ensure ~/.local/bin is in your PATH")
-                    return True
-            return False
-            
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Failed to install just: {e}")
-        if e.stderr:
-            print(f"Error output: {e.stderr}")
-        return False
-    except Exception as e:
-        print(f"❌ Unexpected error installing just: {e}")
-        return False
-
-
 def check_dependencies() -> None:
-    """Check if required tools are installed and offer to install them."""
-    # Check uv first (required for project setup)
+    """Check if required tools are installed."""
+    # Check uv (required for project setup)
     try:
         subprocess.run(['uv', '--version'], capture_output=True, check=True, timeout=10)
+        print("✅ uv is installed")
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("\n❌ Missing required tool: uv")
         print("Please install uv first: https://docs.astral.sh/uv/getting-started/installation/")
         print("uv is required for Python dependency management.")
         exit(1)
-    
-    # Check just with automatic installation option
-    try:
-        subprocess.run(['just', '--version'], capture_output=True, check=True)
-        print("✅ just is already installed")
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("\n⚠️  just is not installed.")
-        print("just is a command runner that provides convenient development commands.")
-        
-        response = input("Would you like to install just automatically? (y/n): ").lower().strip()
-        
-        if response in ['y', 'yes']:
-            if install_just():
-                # Verify installation one more time
-                try:
-                    subprocess.run(['just', '--version'], capture_output=True, check=True, timeout=10)
-                except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-                    print("⚠️  just was installed but may not be in your PATH.")
-                    print("You may need to restart your terminal or add ~/.local/bin to your PATH.")
-                    print("Manual installation guide: https://github.com/casey/just#installation")
-            else:
-                print("❌ Failed to install just automatically.")
-                print("Please install just manually: https://github.com/casey/just#installation")
-                exit(1)
-        else:
-            print("❌ just is required for this project's development workflow.")
-            print("Please install just manually: https://github.com/casey/just#installation")
-            print("Then run setup again.")
-            exit(1)
 
 
 def initialize_git(project_dir: Path, info: Dict[str, Any]) -> None:
@@ -633,14 +544,14 @@ def setup_development_environment(project_dir: Path) -> None:
         
     except subprocess.CalledProcessError as e:
         print(f"⚠️  Development environment setup failed: {e}")
-        print("You can manually run 'just setup' or 'uv sync --extra dev' in the project directory")
+        print("You can manually run 'python run.py' or 'uv sync --extra dev' in the project directory")
 
 
 def main() -> None:
     """Main setup function."""
     # Check dependencies first
     check_dependencies()
-    
+
     # Collect project information
     info = collect_project_info()
 
@@ -678,12 +589,13 @@ def main() -> None:
     print("\n✅ Setup complete! Your project is ready for development.")
     print(f"\n🚀 To get started:")
     print(f"1. cd {info['project_name']}")
-    print("2. just test      # Run tests to verify setup")
-    print("3. Start coding!")
+    print("2. nox -l         # List available tasks")
+    print("3. nox -s tests   # Run tests to verify setup")
+    print("4. Start coding!")
 
     if info.get('use_jupyter', False):
-        print("4. just jupyter   # Start Jupyter Lab for data analysis")
-    
+        print("5. nox -s jupyter # Start Jupyter Lab for data analysis")
+
     print(f"\n📚 See CLAUDE.md for detailed development workflow and commands.")
 
 
