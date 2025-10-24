@@ -497,6 +497,126 @@ When helping with this project:
     (project_dir / 'CLAUDE.md').write_text(claude_content)
 
 
+def get_files_to_remove(info: Dict[str, Any]) -> List[str]:
+    """Build list of template files to remove based on user configuration.
+
+    Args:
+        info: Dictionary containing user configuration choices
+
+    Returns:
+        List of file/directory paths (relative to project root) to remove
+    """
+    files_to_remove = [
+        # Always remove template-specific files
+        'setup_project.py',
+        'ROADMAP.md',
+        'copier.yml',
+        'CLAUDE.md.template',
+        'docs/GITHUB_PROJECT_SETUP.md',
+        'docs/REPOSITORY_SETUP.md',
+        'docs/GITHUB_LABELS.md',
+        '.github/workflows/setup-repository-protection.yml',
+        '.github/workflows/ci.yml.template',
+    ]
+
+    # Conditional removals based on user selections
+    if not info.get('use_jupyter', False):
+        files_to_remove.append('notebooks')
+
+    if not info.get('use_spark', False):
+        files_to_remove.append('scripts/setup_spark.py')
+
+    if not info.get('use_docker', True):
+        files_to_remove.extend([
+            'Dockerfile.dev',
+            'Dockerfile.data',
+            'docker-compose.yml',
+            '.dockerignore',
+        ])
+
+    if not info.get('use_github_actions', True):
+        files_to_remove.extend([
+            '.github/workflows/ci.yml',
+            '.github/workflows/release.yml',
+        ])
+
+    if not info.get('use_pre_commit', True):
+        files_to_remove.append('.pre-commit-config.yaml')
+
+    # Remove empty docs directory if it only had template docs
+    template_docs = [
+        'docs/GITHUB_PROJECT_SETUP.md',
+        'docs/REPOSITORY_SETUP.md',
+        'docs/GITHUB_LABELS.md'
+    ]
+    if all(f in files_to_remove for f in template_docs):
+        files_to_remove.append('docs')
+
+    return files_to_remove
+
+
+def cleanup_template_files(project_dir: Path, info: Dict[str, Any]) -> List[str]:
+    """Remove template-specific files from the generated project.
+
+    Args:
+        project_dir: Path to the generated project directory
+        info: Dictionary containing user configuration choices
+
+    Returns:
+        List of files/directories that were successfully removed
+    """
+    files_to_remove = get_files_to_remove(info)
+    removed_files = []
+
+    print("\n🧹 Cleaning up template files...")
+
+    for file_path in files_to_remove:
+        full_path = project_dir / file_path
+
+        try:
+            if full_path.exists():
+                if full_path.is_dir():
+                    shutil.rmtree(full_path)
+                    removed_files.append(f"📁 {file_path}/")
+                else:
+                    full_path.unlink()
+                    removed_files.append(f"📄 {file_path}")
+        except (PermissionError, OSError) as e:
+            print(f"⚠️  Could not remove {file_path}: {e}")
+
+    return removed_files
+
+
+def verify_template_placeholders(project_dir: Path, info: Dict[str, Any]) -> List[str]:
+    """Verify that no template placeholders remain in project files.
+
+    Args:
+        project_dir: Path to the generated project directory
+        info: Dictionary containing user configuration choices
+
+    Returns:
+        List of files that still contain template placeholders
+    """
+    placeholder_pattern = re.compile(r'\{\{[A-Z_]+\}\}')
+    files_with_placeholders = []
+
+    # Check common text files for placeholders
+    extensions_to_check = {'.py', '.md', '.yml', '.yaml', '.toml', '.txt', '.sh', '.json'}
+
+    for file_path in project_dir.rglob('*'):
+        if file_path.is_file() and file_path.suffix in extensions_to_check:
+            try:
+                content = file_path.read_text(encoding='utf-8')
+                if placeholder_pattern.search(content):
+                    rel_path = file_path.relative_to(project_dir)
+                    files_with_placeholders.append(str(rel_path))
+            except (UnicodeDecodeError, PermissionError):
+                # Skip binary files or files we can't read
+                pass
+
+    return files_with_placeholders
+
+
 def check_dependencies() -> None:
     """Check if required tools are installed."""
     # Check uv (required for project setup)
@@ -584,7 +704,27 @@ def main() -> None:
     # Set up development environment automatically
     setup_development_environment(project_dir)
 
-    print(f"\n🎉 Project '{info['project_name']}' created successfully!")
+    # Clean up template files
+    removed_files = cleanup_template_files(project_dir, info)
+
+    # Verify no template placeholders remain
+    files_with_placeholders = verify_template_placeholders(project_dir, info)
+    if files_with_placeholders:
+        print("\n⚠️  Warning: Template placeholders found in the following files:")
+        for file in files_with_placeholders[:5]:  # Show first 5
+            print(f"   - {file}")
+        if len(files_with_placeholders) > 5:
+            print(f"   ... and {len(files_with_placeholders) - 5} more")
+
+    # Print cleanup summary
+    if removed_files:
+        print(f"\n✨ Removed {len(removed_files)} template-specific files:")
+        for file in removed_files[:10]:  # Show first 10
+            print(f"   {file}")
+        if len(removed_files) > 10:
+            print(f"   ... and {len(removed_files) - 10} more")
+
+    print(f"\n�� Project '{info['project_name']}' created successfully!")
     print(f"📁 Location: {project_dir}")
     print("\n✅ Setup complete! Your project is ready for development.")
     print(f"\n🚀 To get started:")
@@ -596,7 +736,7 @@ def main() -> None:
     if info.get('use_jupyter', False):
         print("5. nox -s jupyter # Start Jupyter Lab for data analysis")
 
-    print(f"\n📚 See CLAUDE.md for detailed development workflow and commands.")
+    print("\n📚 See CLAUDE.md for detailed development workflow and commands.")
 
 
 if __name__ == "__main__":
