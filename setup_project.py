@@ -617,6 +617,34 @@ def verify_template_placeholders(project_dir: Path, info: Dict[str, Any]) -> Lis
     return files_with_placeholders
 
 
+def is_template_repo() -> bool:
+    """Check if current directory is a cloned template repository.
+
+    Returns:
+        True if current directory appears to be a template repo, False otherwise.
+    """
+    cwd = Path.cwd()
+
+    # Check for template-specific markers that indicate this is the template itself
+    template_markers = [
+        cwd / 'setup_project.py',  # This script itself
+        cwd / 'copier.yml',  # Copier configuration
+        cwd / 'src' / '{{PROJECT_NAME}}'  # Template directory structure
+    ]
+
+    # All markers must exist for this to be considered a template repo
+    return all(marker.exists() for marker in template_markers)
+
+
+def is_git_initialized() -> bool:
+    """Check if current directory is already a git repository.
+
+    Returns:
+        True if .git directory exists, False otherwise.
+    """
+    return (Path.cwd() / '.git').is_dir()
+
+
 def check_dependencies() -> None:
     """Check if required tools are installed."""
     # Check uv (required for project setup)
@@ -649,22 +677,72 @@ def setup_development_environment(project_dir: Path) -> None:
     """Set up the development environment automatically."""
     try:
         print("🔧 Setting up development environment...")
-        
+
         # Run uv sync to install dependencies
         subprocess.run(['uv', 'sync', '--extra', 'dev'], cwd=project_dir, check=True, capture_output=True, timeout=300)
-        
+
         # Install pre-commit hooks if available
         try:
             subprocess.run(['uv', 'run', 'pre-commit', 'install'], cwd=project_dir, check=True, capture_output=True, timeout=60)
             print("✅ Pre-commit hooks installed")
         except subprocess.CalledProcessError:
             print("⚠️  Pre-commit installation skipped (not configured)")
-        
+
         print("✅ Development environment ready")
-        
+
     except subprocess.CalledProcessError as e:
         print(f"⚠️  Development environment setup failed: {e}")
         print("You can manually run 'python run.py' or 'uv sync --extra dev' in the project directory")
+
+
+def setup_in_place(project_dir: Path, info: Dict[str, Any]) -> None:
+    """Setup project in place, replacing template files.
+
+    Args:
+        project_dir: Path to the current directory (where setup runs)
+        info: Dictionary containing user configuration choices
+    """
+    import tempfile
+
+    print(f"\n🔄 Setting up project in place (replacing template)...")
+
+    # Create a temporary directory for processing
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+
+        # Process template files into temp directory
+        template_dir = project_dir  # Current directory is the template
+        process_template_directory(template_dir, temp_path, info)
+
+        # Create CLAUDE.md in temp directory
+        create_claude_md(temp_path, info)
+
+        # Clean up template files from temp directory
+        cleanup_template_files(temp_path, info)
+
+        # Now move processed files from temp to current directory
+        # First, remove template-specific files from current directory
+        files_to_remove = get_files_to_remove(info)
+        for file_path in files_to_remove:
+            full_path = project_dir / file_path
+            try:
+                if full_path.exists():
+                    if full_path.is_dir():
+                        shutil.rmtree(full_path)
+                    else:
+                        full_path.unlink()
+            except (PermissionError, OSError) as e:
+                print(f"⚠️  Could not remove {file_path}: {e}")
+
+        # Copy all processed files from temp to current directory
+        for item in temp_path.rglob('*'):
+            if item.is_file():
+                rel_path = item.relative_to(temp_path)
+                dest_path = project_dir / rel_path
+                dest_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(item, dest_path)
+
+    print("✅ Template replaced with new project files")
 
 
 def main() -> None:
@@ -677,7 +755,61 @@ def main() -> None:
 
     print(f"\n🔧 Setting up project '{info['project_name']}'...")
 
-    # Create project directory
+    # Detect if we're in a template repository
+    is_template = is_template_repo()
+    setup_mode = None  # 'in_place', 'new_folder', or None
+
+    if is_template:
+        # Template detected - automatically use in-place replacement
+        print("\n📋 Template repository detected!")
+        print("This appears to be a repository created from the GitHub template.")
+        print("Setting up project in place (replacing template)...")
+        setup_mode = 'in_place'
+    else:
+        # Not a template repo - prompt for setup location
+        print("\n📁 Choose setup location:")
+        setup_in_place_choice = get_user_input(
+            "Setup project in current directory (in-place)?",
+            default="n",
+            is_bool=True
+        )
+        if setup_in_place_choice:
+            setup_mode = 'in_place'
+        else:
+            setup_mode = 'new_folder'
+
+    # Execute based on setup mode
+    if setup_mode == 'in_place':
+        # In-place setup (replace template in current directory)
+        project_dir = Path.cwd()
+
+        # Perform in-place replacement
+        setup_in_place(project_dir, info)
+
+        # If git is not initialized, initialize it
+        if not is_git_initialized():
+            initialize_git(project_dir, info)
+        else:
+            print("✅ Git repository already initialized")
+
+        # Set up development environment
+        setup_development_environment(project_dir)
+
+        print(f"\n✅ Project '{info['project_name']}' setup complete!")
+        print(f"📁 Location: {project_dir}")
+        print("\n✅ Your project is ready for development.")
+        print(f"\n🚀 To get started:")
+        print("1. nox -l         # List available tasks")
+        print("2. nox -s tests   # Run tests to verify setup")
+        print("3. Start coding!")
+
+        if info.get('use_jupyter', False):
+            print("4. nox -s jupyter # Start Jupyter Lab for data analysis")
+
+        print("\n📚 See CLAUDE.md for detailed development workflow and commands.")
+        return
+
+    # New folder setup (original behavior)
     project_dir = Path.cwd() / info['project_name']
     if project_dir.exists():
         overwrite = get_user_input(
