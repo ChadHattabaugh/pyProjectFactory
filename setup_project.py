@@ -717,27 +717,22 @@ def setup_in_place(project_dir: Path, info: Dict[str, Any]) -> None:
         # Create CLAUDE.md in temp directory
         create_claude_md(temp_path, info)
 
-        # Clean up template files from temp directory
-        cleanup_template_files(temp_path, info)
-
-        # Now move processed files from temp to current directory
-        # First, remove template-specific files from current directory
-        files_to_remove = get_files_to_remove(info)
-        for file_path in files_to_remove:
-            full_path = project_dir / file_path
-            try:
-                if full_path.exists():
-                    if full_path.is_dir():
-                        shutil.rmtree(full_path)
-                    else:
-                        full_path.unlink()
-            except (PermissionError, OSError) as e:
-                print(f"⚠️  Could not remove {file_path}: {e}")
+        # Remove template-specific files from current directory BEFORE copying
+        # This ensures we clean the destination, not the source
+        print("🧹 Cleaning up template files from current directory...")
+        cleanup_template_files(project_dir, info)
 
         # Copy all processed files from temp to current directory
+        # Skip setup_project.py to avoid overwriting the running script
+        print("📋 Installing new project files...")
         for item in temp_path.rglob('*'):
             if item.is_file():
                 rel_path = item.relative_to(temp_path)
+
+                # Skip setup_project.py since it's currently running
+                if str(rel_path) == 'setup_project.py':
+                    continue
+
                 dest_path = project_dir / rel_path
                 dest_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(item, dest_path)
@@ -798,6 +793,11 @@ def main() -> None:
         print(f"\n✅ Project '{info['project_name']}' setup complete!")
         print(f"📁 Location: {project_dir}")
         print("\n✅ Your project is ready for development.")
+
+        # Remind user to clean up setup script
+        print("\n⚠️  NOTE: Please delete setup_project.py when you're ready:")
+        print("   rm setup_project.py")
+
         print(f"\n🚀 To get started:")
         print("1. nox -l         # List available tasks")
         print("2. nox -s tests   # Run tests to verify setup")
