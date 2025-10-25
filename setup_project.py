@@ -723,14 +723,21 @@ def setup_in_place(project_dir: Path, info: Dict[str, Any]) -> None:
         cleanup_template_files(project_dir, info)
 
         # Copy all processed files from temp to current directory
-        # Skip setup_project.py to avoid overwriting the running script
+        # Skip setup_project.py and .git directory to avoid conflicts
         print("📋 Installing new project files...")
         for item in temp_path.rglob('*'):
             if item.is_file():
                 rel_path = item.relative_to(temp_path)
+                rel_path_str = str(rel_path)
 
                 # Skip setup_project.py since it's currently running
-                if str(rel_path) == 'setup_project.py':
+                if rel_path_str == 'setup_project.py':
+                    continue
+
+                # Skip .git directory - repository is already initialized when cloning from GitHub
+                # Also skip other VCS and cache directories that shouldn't be copied
+                skip_patterns = ['.git', '__pycache__', '.pytest_cache', '.mypy_cache', '.ruff_cache', '.nox']
+                if any(pattern in rel_path.parts for pattern in skip_patterns):
                     continue
 
                 dest_path = project_dir / rel_path
